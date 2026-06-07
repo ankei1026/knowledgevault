@@ -1,7 +1,8 @@
 // resources/js/Pages/Student/Dashboard.tsx
 
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import toast from 'react-hot-toast';
 import {
     FileText,
     Clock,
@@ -13,8 +14,29 @@ import {
     ChevronRight,
     Eye,
     AlertCircle,
+    UserPlus,
+    User,
+    Mail,
+    Send,
+    X,
 } from 'lucide-react';
 import AppLayout from '@/layout/app-layout';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+interface FacultyMember {
+    id: number;
+    name: string;
+    email: string;
+}
 
 interface StudentDashboardProps {
     user: {
@@ -36,12 +58,23 @@ interface StudentDashboardProps {
         status: string;
         created_at: string;
         updated_at: string;
+        reviewer_id: number | null;
+        reviewer_name: string | null;
     }>;
     pendingDocuments: Array<{
         id: number;
         title: string;
         submitted_at: string;
+        reviewer_id: number | null;
+        reviewer_name: string | null;
     }>;
+    documentsNeedingReviewer: Array<{
+        id: number;
+        title: string;
+        status: string;
+        created_at: string;
+    }>;
+    facultyMembers: FacultyMember[];
     recentActivity: Array<{
         type: string;
         action: string;
@@ -56,8 +89,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
     stats,
     recentDocuments,
     pendingDocuments,
+    documentsNeedingReviewer,
+    facultyMembers,
     recentActivity,
 }) => {
+    const [showReviewerModal, setShowReviewerModal] = useState(false);
+    const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(
+        null,
+    );
+    const [selectedDocumentTitle, setSelectedDocumentTitle] = useState('');
+    const [selectedReviewerId, setSelectedReviewerId] = useState('');
+    const [reviewerMessage, setReviewerMessage] = useState('');
+    const [assigning, setAssigning] = useState(false);
+
     const statCards = [
         {
             title: 'Total Documents',
@@ -124,6 +168,48 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
         }
     };
 
+    const handleOpenReviewerModal = (docId: number, docTitle: string) => {
+        setSelectedDocumentId(docId);
+        setSelectedDocumentTitle(docTitle);
+        setSelectedReviewerId('');
+        setReviewerMessage('');
+        setShowReviewerModal(true);
+    };
+
+    const handleAssignReviewer = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!selectedReviewerId) {
+            toast.error('Please select a faculty reviewer');
+            return;
+        }
+
+        setAssigning(true);
+
+        router.post(
+            `/student/documents/${selectedDocumentId}/assign-reviewer`,
+            {
+                reviewer_id: selectedReviewerId,
+                message: reviewerMessage,
+            },
+            {
+                onSuccess: () => {
+                    setAssigning(false);
+                    setShowReviewerModal(false);
+                    toast.success('Reviewer assigned successfully');
+                },
+                onError: (error) => {
+                    toast.error(error.message || 'Failed to assign reviewer');
+                    setAssigning(false);
+                },
+            },
+        );
+    };
+
+    const selectedFaculty = facultyMembers.find(
+        (f) => f.id.toString() === selectedReviewerId,
+    );
+
     return (
         <AppLayout>
             <Head title="Student Dashboard - ASC KnowledgeVault" />
@@ -141,7 +227,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         Welcome back, {user?.name?.split(' ')[0] || 'Student'}
                     </h1>
                     <p className="font-sans text-base leading-relaxed text-[#6C6863]">
-                        Manage your capstone manuscripts, track review status, and access your research documents.
+                        Manage your capstone manuscripts, track review status,
+                        and access your research documents.
                     </p>
                 </div>
 
@@ -172,6 +259,55 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     })}
                 </div>
 
+                {/* Documents Needing Reviewer - Priority Alert */}
+                {documentsNeedingReviewer.length > 0 && (
+                    <div className="mb-8 border border-blue-200 bg-blue-50 p-4">
+                        <div className="flex items-center gap-3">
+                            <UserPlus className="h-5 w-5 text-blue-600" />
+                            <div className="flex-1">
+                                <p className="font-sans text-sm text-blue-800">
+                                    You have{' '}
+                                    <strong>
+                                        {documentsNeedingReviewer.length}
+                                    </strong>{' '}
+                                    document(s) that need a faculty reviewer.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                            {documentsNeedingReviewer.map((doc) => (
+                                <div
+                                    key={doc.id}
+                                    className="flex items-center justify-between rounded border border-blue-200 bg-white p-2"
+                                >
+                                    <div>
+                                        <p className="font-sans text-sm text-[#1A1A1A]">
+                                            {doc.title}
+                                        </p>
+                                        <p className="font-sans text-xs text-[#6C6863]">
+                                            Status: {doc.status} • Created:{' '}
+                                            {doc.created_at}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        onClick={() =>
+                                            handleOpenReviewerModal(
+                                                doc.id,
+                                                doc.title,
+                                            )
+                                        }
+                                        size="sm"
+                                        className="bg-blue-600 hover:bg-blue-700"
+                                    >
+                                        <UserPlus className="mr-1 h-3 w-3" />
+                                        Assign Reviewer
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Pending Reviews Alert */}
                 {stats.pending_reviews > 0 && (
                     <div className="mb-8 border border-yellow-200 bg-yellow-50 p-4">
@@ -179,15 +315,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                             <Clock className="h-5 w-5 text-yellow-600" />
                             <div className="flex-1">
                                 <p className="font-sans text-sm text-yellow-800">
-                                    You have <strong>{stats.pending_reviews}</strong> document(s) waiting for review.
+                                    You have{' '}
+                                    <strong>{stats.pending_reviews}</strong>{' '}
+                                    document(s) waiting for review.
                                 </p>
                             </div>
-                            <Link
-                                href="/student/library?status=pending_review"
-                                className="text-xs font-sans text-yellow-800 underline hover:text-yellow-900"
-                            >
-                                View Details
-                            </Link>
                         </div>
                     </div>
                 )}
@@ -213,7 +345,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                                     href="/student/library"
                                     className="flex items-center gap-1 font-sans text-xs text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
                                 >
-                                    View All <ChevronRight className="h-3 w-3" />
+                                    View All{' '}
+                                    <ChevronRight className="h-3 w-3" />
                                 </Link>
                             </div>
 
@@ -224,9 +357,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                                             key={doc.id}
                                             className="group border-b border-[#1A1A1A]/10 pb-2 transition-all duration-500 last:border-0 hover:pl-2"
                                         >
-                                            <Link href={`/student/documents/${doc.id}`} className="block">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <Link
+                                                        href={`/documents/${doc.id}`}
+                                                        className="block"
+                                                    >
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <h4 className="font-playfair text-sm text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37]">
                                                                 {doc.title}
@@ -234,17 +370,51 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                                                             <span
                                                                 className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] ${getStatusBadge(doc.status)}`}
                                                             >
-                                                                {getStatusIcon(doc.status)}
-                                                                {getStatusLabel(doc.status)}
+                                                                {getStatusIcon(
+                                                                    doc.status,
+                                                                )}
+                                                                {getStatusLabel(
+                                                                    doc.status,
+                                                                )}
                                                             </span>
                                                         </div>
                                                         <p className="mt-1 font-sans text-[10px] text-[#6C6863]">
-                                                            {doc.status === 'draft' ? 'Last edited' : 'Submitted'} {doc.updated_at}
+                                                            {doc.status ===
+                                                            'draft'
+                                                                ? 'Last edited'
+                                                                : 'Submitted'}{' '}
+                                                            {doc.updated_at}
                                                         </p>
-                                                    </div>
+                                                        {doc.reviewer_name && (
+                                                            <p className="mt-1 font-sans text-[10px] text-[#D4AF37]">
+                                                                Reviewer:{' '}
+                                                                {
+                                                                    doc.reviewer_name
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </Link>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {!doc.reviewer_id &&
+                                                        doc.status ===
+                                                            'draft' && (
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleOpenReviewerModal(
+                                                                        doc.id,
+                                                                        doc.title,
+                                                                    )
+                                                                }
+                                                                className="p-1 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
+                                                                title="Assign Reviewer"
+                                                            >
+                                                                <UserPlus className="h-3 w-3" />
+                                                            </button>
+                                                        )}
                                                     <ChevronRight className="h-3 w-3 text-[#6C6863] opacity-0 transition-all duration-500 group-hover:opacity-100" />
                                                 </div>
-                                            </Link>
+                                            </div>
                                         </div>
                                     ))
                                 ) : (
@@ -294,13 +464,40 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                                                 <p className="font-sans text-[10px] text-[#6C6863]">
                                                     Submitted {doc.submitted_at}
                                                 </p>
+                                                {doc.reviewer_name && (
+                                                    <p className="font-sans text-[10px] text-[#D4AF37]">
+                                                        Reviewer:{' '}
+                                                        {doc.reviewer_name}
+                                                    </p>
+                                                )}
+                                                {!doc.reviewer_id && (
+                                                    <p className="font-sans text-[10px] text-yellow-600">
+                                                        No reviewer assigned yet
+                                                    </p>
+                                                )}
                                             </div>
-                                            <Link
-                                                href={`/documents/${doc.id}`}
-                                                className="text-[#D4AF37] transition-colors hover:text-[#1A1A1A]"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
+                                            <div className="flex items-center gap-2">
+                                                {!doc.reviewer_id && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleOpenReviewerModal(
+                                                                doc.id,
+                                                                doc.title,
+                                                            )
+                                                        }
+                                                        className="text-[#D4AF37] transition-colors hover:text-[#1A1A1A]"
+                                                        title="Assign Reviewer"
+                                                    >
+                                                        <UserPlus className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                                <Link
+                                                    href={`/documents/${doc.id}`}
+                                                    className="text-[#D4AF37] transition-colors hover:text-[#1A1A1A]"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Link>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -328,16 +525,27 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                                         >
                                             <div className="flex-1">
                                                 <p className="font-sans text-xs text-[#1A1A1A]">
-                                                    <span className="capitalize">{activity.action}</span>{' '}
+                                                    <span className="capitalize">
+                                                        {activity.action}
+                                                    </span>{' '}
                                                     <span className="font-playfair text-[#D4AF37]">
-                                                        "{activity.title.length > 40 ? activity.title.substring(0, 40) + '...' : activity.title}"
+                                                        "
+                                                        {activity.title.length >
+                                                        40
+                                                            ? activity.title.substring(
+                                                                  0,
+                                                                  40,
+                                                              ) + '...'
+                                                            : activity.title}
+                                                        "
                                                     </span>
                                                 </p>
                                                 <p className="mt-1 font-sans text-[10px] text-[#6C6863]">
                                                     {activity.date}
                                                 </p>
                                             </div>
-                                            {activity.status === 'pending_review' && (
+                                            {activity.status ===
+                                                'pending_review' && (
                                                 <Clock className="h-3 w-3 text-yellow-600" />
                                             )}
                                             {activity.status === 'approved' && (
@@ -391,6 +599,117 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Assign Reviewer Modal */}
+            {showReviewerModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A1A1A]/50 p-4">
+                    <div className="relative w-full max-w-md border border-[#1A1A1A]/20 bg-[#F9F8F6]">
+                        <div className="flex items-center justify-between border-b border-[#1A1A1A]/10 p-4">
+                            <div>
+                                <h3 className="font-playfair text-xl text-[#1A1A1A]">
+                                    Assign Faculty Reviewer
+                                </h3>
+                                <p className="mt-1 font-sans text-sm text-[#6C6863]">
+                                    {selectedDocumentTitle}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowReviewerModal(false)}
+                                className="text-[#6C6863] transition-colors hover:text-[#D4AF37]"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleAssignReviewer} className="p-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <Label className="mb-2 block">
+                                        Select Faculty Reviewer *
+                                    </Label>
+                                    <Select
+                                        value={selectedReviewerId}
+                                        onValueChange={setSelectedReviewerId}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Choose a faculty member..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {facultyMembers.map((faculty) => (
+                                                <SelectItem
+                                                    key={faculty.id}
+                                                    value={faculty.id.toString()}
+                                                >
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">
+                                                            {faculty.name}
+                                                        </span>
+                                                        <span className="text-xs text-[#6C6863]">
+                                                            {faculty.email}
+                                                        </span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {selectedFaculty && (
+                                    <div className="rounded border border-[#D4AF37]/20 bg-[#D4AF37]/5 p-3">
+                                        <div className="flex items-center gap-2">
+                                            <User className="h-4 w-4 text-[#D4AF37]" />
+                                            <span className="font-sans text-sm text-[#1A1A1A]">
+                                                {selectedFaculty.name}
+                                            </span>
+                                        </div>
+                                        <div className="mt-1 flex items-center gap-2">
+                                            <Mail className="h-3 w-3 text-[#6C6863]" />
+                                            <span className="font-sans text-xs text-[#6C6863]">
+                                                {selectedFaculty.email}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <Label className="mb-2 block">
+                                        Personal Message (Optional)
+                                    </Label>
+                                    <Textarea
+                                        value={reviewerMessage}
+                                        onChange={(e) =>
+                                            setReviewerMessage(e.target.value)
+                                        }
+                                        placeholder="Add a personal message to the reviewer..."
+                                        rows={3}
+                                        className="resize-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex gap-3">
+                                <Button
+                                    type="submit"
+                                    disabled={assigning}
+                                    className="flex-1 bg-[#1A1A1A] hover:bg-[#D4AF37]"
+                                >
+                                    <Send className="mr-2 h-4 w-4" />
+                                    {assigning
+                                        ? 'Assigning...'
+                                        : 'Assign Reviewer'}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowReviewerModal(false)}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 };

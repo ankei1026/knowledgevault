@@ -19,7 +19,7 @@ createInertiaApp({
             <>
                 <Toaster />
                 <App {...props} />
-            </>
+            </>,
         );
     },
 

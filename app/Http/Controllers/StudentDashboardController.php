@@ -11,12 +11,23 @@ use Inertia\Inertia;
 
 class StudentDashboardController extends Controller
 {
-    /**
-     * Show student dashboard
-     */
     public function index()
     {
         $user = Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        if ($user->role !== 'student') {
+            return redirect()->route('dashboard');
+        }
+
+        // Get faculty members for reviewer selection
+        $facultyMembers = User::where('role', 'faculty')
+            ->select('id', 'name', 'email')
+            ->orderBy('name')
+            ->get();
 
         // Get student statistics
         $stats = [
@@ -35,8 +46,9 @@ class StudentDashboardController extends Controller
                 ->count(),
         ];
 
-        // Get recent documents
+        // Get recent documents with reviewer info
         $recentDocuments = Document::where('user_id', $user->id)
+            ->with('reviewer')
             ->latest()
             ->limit(5)
             ->get()
@@ -47,12 +59,15 @@ class StudentDashboardController extends Controller
                     'status' => $doc->status,
                     'created_at' => $doc->created_at->diffForHumans(),
                     'updated_at' => $doc->updated_at->diffForHumans(),
+                    'reviewer_id' => $doc->reviewer_id,
+                    'reviewer_name' => $doc->reviewer?->name,
                 ];
             });
 
-        // Get pending documents for review
+        // Get pending documents
         $pendingDocuments = Document::where('user_id', $user->id)
             ->where('status', 'pending_review')
+            ->with('reviewer')
             ->latest()
             ->limit(3)
             ->get()
@@ -60,11 +75,31 @@ class StudentDashboardController extends Controller
                 return [
                     'id' => $doc->id,
                     'title' => $doc->title,
-                    'submitted_at' => $doc->updated_at->diffForHumans(),
+                    'submitted_at' => $doc->submitted_at?->diffForHumans() ?? $doc->updated_at->diffForHumans(),
+                    'reviewer_id' => $doc->reviewer_id,
+                    'reviewer_name' => $doc->reviewer?->name,
                 ];
             });
 
-        // Get recent activity (all user actions)
+        // Get documents that need reviewer assignment (draft or no reviewer)
+        $documentsNeedingReviewer = Document::where('user_id', $user->id)
+            ->where(function ($q) {
+                $q->whereNull('reviewer_id')
+                    ->orWhere('reviewer_id', 0);
+            })
+            ->whereIn('status', ['draft', 'pending_review'])
+            ->latest()
+            ->get()
+            ->map(function ($doc) {
+                return [
+                    'id' => $doc->id,
+                    'title' => $doc->title,
+                    'status' => $doc->status,
+                    'created_at' => $doc->created_at->diffForHumans(),
+                ];
+            });
+
+        // Get recent activity
         $recentActivity = Document::where('user_id', $user->id)
             ->latest()
             ->limit(10)
@@ -84,30 +119,9 @@ class StudentDashboardController extends Controller
             'stats' => $stats,
             'recentDocuments' => $recentDocuments,
             'pendingDocuments' => $pendingDocuments,
+            'documentsNeedingReviewer' => $documentsNeedingReviewer,
+            'facultyMembers' => $facultyMembers,
             'recentActivity' => $recentActivity,
-        ]);
-    }
-
-    /**
-     * Get document library page
-     */
-    public function library()
-    {
-        $documents = Document::where('user_id', Auth::id())
-            ->latest()
-            ->paginate(12);
-
-        $stats = [
-            'total' => Document::where('user_id', Auth::id())->count(),
-            'approved' => Document::where('user_id', Auth::id())->where('status', 'approved')->count(),
-            'pending' => Document::where('user_id', Auth::id())->where('status', 'pending_review')->count(),
-            'rejected' => Document::where('user_id', Auth::id())->where('status', 'rejected')->count(),
-            'draft' => Document::where('user_id', Auth::id())->where('status', 'draft')->count(),
-        ];
-
-        return Inertia::render('Student/Library', [
-            'documents' => $documents,
-            'stats' => $stats,
         ]);
     }
 }

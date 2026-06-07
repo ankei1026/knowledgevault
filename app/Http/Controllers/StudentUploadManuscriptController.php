@@ -33,7 +33,7 @@ class StudentUploadManuscriptController extends Controller
             'abstract' => 'nullable|string|max:5000',
             'description' => 'nullable|string',
             'keywords' => 'nullable|string',
-            'file' => 'required|file|mimes:pdf,doc,docx|max:20480',
+            'file' => 'required|file|mimes:pdf,doc,docx|max:122880', // 120MB max (120 * 1024 = 122880 KB)
             'is_public' => 'nullable|boolean',
         ]);
 
@@ -52,7 +52,7 @@ class StudentUploadManuscriptController extends Controller
                 'file_path' => $filePath,
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(), // This should be set correctly
+                'mime_type' => $file->getMimeType(),
                 'user_id' => Auth::id(),
                 'status' => 'draft',
                 'is_public' => $request->boolean('is_public', true),
@@ -66,6 +66,7 @@ class StudentUploadManuscriptController extends Controller
             return redirect()->back()->with('error', 'Failed to upload manuscript: ' . $e->getMessage());
         }
     }
+
     /**
      * Send invitation to co-author or reviewer
      */

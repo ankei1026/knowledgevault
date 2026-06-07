@@ -116,7 +116,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
     const [isClient, setIsClient] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showReviewForm, setShowReviewForm] = useState(false);
-    const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected'>('approved');
+    const [reviewStatus, setReviewStatus] = useState<'approved' | 'rejected'>(
+        'approved',
+    );
     const [reviewFeedback, setReviewFeedback] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
@@ -132,7 +134,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
     const [pdfError, setPdfError] = useState<string | null>(null);
 
     const isPdf = document.mime_type === 'application/pdf';
-    const isDocx = document.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const isDocx =
+        document.mime_type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const isDoc = document.mime_type === 'application/msword';
     const isPreviewable = isPdf || isDocx || isDoc;
 
@@ -145,34 +149,49 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
             return <FileText className="h-12 w-12 text-red-500" />;
         }
         // Word documents
-        if (mimeType === 'application/msword' ||
-            mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-            fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+        if (
+            mimeType === 'application/msword' ||
+            mimeType ===
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+            fileName.endsWith('.doc') ||
+            fileName.endsWith('.docx')
+        ) {
             return <FileText className="h-12 w-12 text-blue-500" />;
         }
         // Images
-        if (mimeType?.startsWith('image/') ||
-            fileName.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)) {
+        if (
+            mimeType?.startsWith('image/') ||
+            fileName.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)
+        ) {
             return <Image className="h-12 w-12 text-green-500" />;
         }
         // Archives
-        if (mimeType?.includes('zip') || mimeType?.includes('rar') ||
-            fileName.match(/\.(zip|rar|7z|tar|gz)$/)) {
+        if (
+            mimeType?.includes('zip') ||
+            mimeType?.includes('rar') ||
+            fileName.match(/\.(zip|rar|7z|tar|gz)$/)
+        ) {
             return <FileArchive className="h-12 w-12 text-yellow-500" />;
         }
         // Audio
-        if (mimeType?.startsWith('audio/') ||
-            fileName.match(/\.(mp3|wav|ogg|m4a)$/)) {
+        if (
+            mimeType?.startsWith('audio/') ||
+            fileName.match(/\.(mp3|wav|ogg|m4a)$/)
+        ) {
             return <Music className="h-12 w-12 text-purple-500" />;
         }
         // Video
-        if (mimeType?.startsWith('video/') ||
-            fileName.match(/\.(mp4|avi|mov|wmv|flv)$/)) {
+        if (
+            mimeType?.startsWith('video/') ||
+            fileName.match(/\.(mp4|avi|mov|wmv|flv)$/)
+        ) {
             return <Video className="h-12 w-12 text-pink-500" />;
         }
         // Text files
-        if (mimeType?.startsWith('text/') ||
-            fileName.match(/\.(txt|md|rtf)$/)) {
+        if (
+            mimeType?.startsWith('text/') ||
+            fileName.match(/\.(txt|md|rtf)$/)
+        ) {
             return <Code className="h-12 w-12 text-gray-500" />;
         }
         // Default
@@ -190,8 +209,11 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
         if (mimeType === 'application/msword' || fileName.endsWith('.doc')) {
             return 'Word Document (DOC)';
         }
-        if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-            fileName.endsWith('.docx')) {
+        if (
+            mimeType ===
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+            fileName.endsWith('.docx')
+        ) {
             return 'Word Document (DOCX)';
         }
         if (mimeType?.startsWith('image/')) {
@@ -215,22 +237,24 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
     useEffect(() => {
         if (isClient && typeof window !== 'undefined') {
             const handleFullscreenChange = () => {
-                setIsFullscreen(!!(
-                    document.fullscreenElement ||
-                    (document as any).webkitFullscreenElement ||
-                    (document as any).mozFullScreenElement ||
-                    (document as any).msFullscreenElement
-                ));
+                setIsFullscreen(
+                    !!(
+                        document.fullscreenElement ||
+                        (document as any).webkitFullscreenElement ||
+                        (document as any).mozFullScreenElement ||
+                        (document as any).msFullscreenElement
+                    ),
+                );
             };
             window.document.addEventListener(
                 'fullscreenchange',
-                handleFullscreenChange
+                handleFullscreenChange,
             );
 
             return () =>
                 window.document.removeEventListener(
                     'fullscreenchange',
-                    handleFullscreenChange
+                    handleFullscreenChange,
                 );
         }
     }, [isClient]);
@@ -261,34 +285,42 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
     };
 
     const handleDownload = () => {
-        router.get(`/documents/${document.id}/download`, {}, {
-            onSuccess: () => {
-                toast.success('Download started');
+        router.get(
+            `/student/documents/${document.id}/download`,
+            {},
+            {
+                onSuccess: () => {
+                    toast.success('Download started');
+                },
+                onError: () => {
+                    toast.error('Failed to download file');
+                },
             },
-            onError: () => {
-                toast.error('Failed to download file');
-            },
-        });
+        );
     };
 
     const handleSubmitReview = (e: React.FormEvent) => {
         e.preventDefault();
         setSubmittingReview(true);
 
-        router.post(`/documents/${document.id}/review`, {
-            status: reviewStatus,
-            feedback: reviewFeedback,
-        }, {
-            onSuccess: () => {
-                toast.success(`Document ${reviewStatus} successfully`);
-                setShowReviewForm(false);
-                setSubmittingReview(false);
+        router.post(
+            `/documents/${document.id}/review`,
+            {
+                status: reviewStatus,
+                feedback: reviewFeedback,
             },
-            onError: (error) => {
-                toast.error(error.message || 'Failed to submit review');
-                setSubmittingReview(false);
+            {
+                onSuccess: () => {
+                    toast.success(`Document ${reviewStatus} successfully`);
+                    setShowReviewForm(false);
+                    setSubmittingReview(false);
+                },
+                onError: (error) => {
+                    toast.error(error.message || 'Failed to submit review');
+                    setSubmittingReview(false);
+                },
             },
-        });
+        );
     };
 
     const toggleFullscreen = () => {
@@ -329,26 +361,15 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
     };
 
     const zoomIn = () => {
-        setScale(prev => Math.min(prev + 0.25, 3.0));
+        setScale((prev) => Math.min(prev + 0.25, 3.0));
     };
 
     const zoomOut = () => {
-        setScale(prev => Math.max(prev - 0.25, 0.5));
+        setScale((prev) => Math.max(prev - 0.25, 0.5));
     };
 
     const rotate = () => {
-        setRotation(prev => (prev + 90) % 360);
-    };
-
-    const getFileIcon = () => {
-        if (isPdf) return <FileText className="h-12 w-12 text-red-500" />;
-        if (isDocx || isDoc) return <FileText className="h-12 w-12 text-blue-500" />;
-        if (document.mime_type?.includes('image')) return <Image className="h-12 w-12 text-green-500" />;
-        if (document.mime_type?.includes('zip') || document.mime_type?.includes('rar')) return <FileArchive className="h-12 w-12 text-yellow-500" />;
-        if (document.mime_type?.includes('audio')) return <Music className="h-12 w-12 text-purple-500" />;
-        if (document.mime_type?.includes('video')) return <Video className="h-12 w-12 text-pink-500" />;
-        if (document.mime_type?.includes('text')) return <Code className="h-12 w-12 text-gray-500" />;
-        return <File className="h-12 w-12 text-[#6C6863]" />;
+        setRotation((prev) => (prev + 90) % 360);
     };
 
     const getStatusIcon = () => {
@@ -388,7 +409,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
                             <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                            <p className="font-sans text-sm text-[#6C6863]">Loading document...</p>
+                            <p className="font-sans text-sm text-[#6C6863]">
+                                Loading document...
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -410,7 +433,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                 Manuscript
                             </span>
                         </div>
-                        <span className={`rounded border px-3 py-1 text-xs font-sans ${getStatusClass()}`}>
+                        <span
+                            className={`rounded border px-3 py-1 font-sans text-xs ${getStatusClass()}`}
+                        >
                             <span className="flex items-center gap-1">
                                 {getStatusIcon()}
                                 {document.status_label}
@@ -425,28 +450,41 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                     <div className="mb-6 flex flex-wrap items-center gap-6">
                         <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-[#6C6863]" />
-                            <span className="font-sans text-sm text-[#1A1A1A]">{author.name}</span>
+                            <span className="font-sans text-sm text-[#1A1A1A]">
+                                {author.name}
+                            </span>
                             {author.role === 'faculty' && (
-                                <span className="text-xs text-[#D4AF37]">(Faculty)</span>
+                                <span className="text-xs text-[#D4AF37]">
+                                    (Faculty)
+                                </span>
                             )}
                         </div>
                         <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-[#6C6863]" />
-                            <span className="font-sans text-sm text-[#6C6863]">{document.created_at}</span>
+                            <span className="font-sans text-sm text-[#6C6863]">
+                                {document.created_at}
+                            </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Eye className="h-4 w-4 text-[#6C6863]" />
-                            <span className="font-sans text-sm text-[#6C6863]">{document.views} views</span>
+                            <span className="font-sans text-sm text-[#6C6863]">
+                                {document.views} views
+                            </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Download className="h-4 w-4 text-[#6C6863]" />
-                            <span className="font-sans text-sm text-[#6C6863]">{document.downloads} downloads</span>
+                            <span className="font-sans text-sm text-[#6C6863]">
+                                {document.downloads} downloads
+                            </span>
                         </div>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3">
-                        <Button onClick={handleDownload} className="bg-[#1A1A1A] hover:bg-[#D4AF37]">
+                        <Button
+                            onClick={handleDownload}
+                            className="bg-[#1A1A1A] hover:bg-[#D4AF37]"
+                        >
                             <Download className="mr-2 h-4 w-4" />
                             Download
                         </Button>
@@ -463,7 +501,10 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         )}
 
                         {(userRole === 'owner' || userRole === 'co-author') && (
-                            <Button variant="outline" onClick={() => setShowInviteModal(true)}>
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowInviteModal(true)}
+                            >
                                 <Users className="mr-2 h-4 w-4" />
                                 Invite Collaborators
                             </Button>
@@ -472,7 +513,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         {canReview && !document.reviewed_at && (
                             <Button
                                 variant="outline"
-                                onClick={() => setShowReviewForm(!showReviewForm)}
+                                onClick={() =>
+                                    setShowReviewForm(!showReviewForm)
+                                }
                                 className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
                             >
                                 <MessageSquare className="mr-2 h-4 w-4" />
@@ -487,15 +530,19 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
                         <div
                             id="preview-container"
-                            className={`relative bg-[#F9F8F6] ${isFullscreen ? 'fixed inset-0' : 'w-full max-w-5xl h-[90vh]'}`}
+                            className={`relative bg-[#F9F8F6] ${isFullscreen ? 'fixed inset-0' : 'h-[90vh] w-full max-w-5xl'}`}
                         >
                             {/* Preview Header */}
-                            <div className="flex items-center justify-between border-b border-[#1A1A1A]/10 p-3 bg-[#F9F8F6]">
+                            <div className="flex items-center justify-between border-b border-[#1A1A1A]/10 bg-[#F9F8F6] p-3">
                                 <div className="flex items-center gap-2">
                                     <FileText className="h-5 w-5 text-red-500" />
                                     <div>
-                                        <h3 className="font-playfair text-sm text-[#1A1A1A]">{document.title}</h3>
-                                        <p className="font-sans text-xs text-[#6C6863]">{document.file_name}</p>
+                                        <h3 className="font-playfair text-sm text-[#1A1A1A]">
+                                            {document.title}
+                                        </h3>
+                                        <p className="font-sans text-xs text-[#6C6863]">
+                                            {document.file_name}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -507,7 +554,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                     >
                                         <ZoomOut className="h-4 w-4" />
                                     </button>
-                                    <span className="text-xs text-[#6C6863]">{Math.round(scale * 100)}%</span>
+                                    <span className="text-xs text-[#6C6863]">
+                                        {Math.round(scale * 100)}%
+                                    </span>
                                     <button
                                         onClick={zoomIn}
                                         className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
@@ -522,13 +571,21 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                     >
                                         <RotateCw className="h-4 w-4" />
                                     </button>
-                                    <div className="w-px h-6 bg-[#1A1A1A]/10 mx-1" />
+                                    <div className="mx-1 h-6 w-px bg-[#1A1A1A]/10" />
                                     <button
                                         onClick={toggleFullscreen}
                                         className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
-                                        title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                                        title={
+                                            isFullscreen
+                                                ? 'Exit Fullscreen'
+                                                : 'Fullscreen'
+                                        }
                                     >
-                                        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                                        {isFullscreen ? (
+                                            <Minimize2 className="h-4 w-4" />
+                                        ) : (
+                                            <Maximize2 className="h-4 w-4" />
+                                        )}
                                     </button>
                                     <button
                                         onClick={() => setShowPreview(false)}
@@ -540,12 +597,14 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                             </div>
 
                             {/* PDF Viewer */}
-                            <div className="h-[calc(100%-60px)] overflow-auto bg-gray-100 flex flex-col items-center p-4">
+                            <div className="flex h-[calc(100%-60px)] flex-col items-center overflow-auto bg-gray-100 p-4">
                                 {pdfLoading && (
                                     <div className="flex h-full items-center justify-center">
                                         <div className="text-center">
                                             <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                                            <p className="font-sans text-sm text-[#6C6863]">Loading PDF...</p>
+                                            <p className="font-sans text-sm text-[#6C6863]">
+                                                Loading PDF...
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -554,8 +613,13 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                     <div className="flex h-full items-center justify-center">
                                         <div className="max-w-md text-center">
                                             <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-                                            <p className="font-sans text-sm text-red-600">{pdfError}</p>
-                                            <Button onClick={handleDownload} className="mt-4">
+                                            <p className="font-sans text-sm text-red-600">
+                                                {pdfError}
+                                            </p>
+                                            <Button
+                                                onClick={handleDownload}
+                                                className="mt-4"
+                                            >
                                                 <Download className="mr-2 h-4 w-4" />
                                                 Download PDF Instead
                                             </Button>
@@ -567,13 +631,17 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                     <>
                                         <PDFDocument
                                             file={pdfFile}
-                                            onLoadSuccess={onDocumentLoadSuccess}
+                                            onLoadSuccess={
+                                                onDocumentLoadSuccess
+                                            }
                                             onLoadError={onDocumentLoadError}
                                             loading={
                                                 <div className="flex items-center justify-center py-20">
                                                     <div className="text-center">
                                                         <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                                                        <p className="font-sans text-sm text-[#6C6863]">Loading pages...</p>
+                                                        <p className="font-sans text-sm text-[#6C6863]">
+                                                            Loading pages...
+                                                        </p>
                                                     </div>
                                                 </div>
                                             }
@@ -590,21 +658,24 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
 
                                         {/* Pagination Controls */}
                                         {numPages && numPages > 1 && (
-                                            <div className="mt-4 flex items-center gap-4 p-3 bg-white border border-[#1A1A1A]/10">
+                                            <div className="mt-4 flex items-center gap-4 border border-[#1A1A1A]/10 bg-white p-3">
                                                 <button
                                                     onClick={goToPreviousPage}
                                                     disabled={pageNumber <= 1}
-                                                    className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     <ChevronLeft className="h-5 w-5" />
                                                 </button>
                                                 <span className="font-sans text-sm text-[#1A1A1A]">
-                                                    Page {pageNumber} of {numPages}
+                                                    Page {pageNumber} of{' '}
+                                                    {numPages}
                                                 </span>
                                                 <button
                                                     onClick={goToNextPage}
-                                                    disabled={pageNumber >= numPages}
-                                                    className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    disabled={
+                                                        pageNumber >= numPages
+                                                    }
+                                                    className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     <ChevronRight className="h-5 w-5" />
                                                 </button>
@@ -620,8 +691,13 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                 {/* Review Form */}
                 {showReviewForm && (
                     <div className="mb-8 border border-yellow-200 bg-yellow-50 p-6">
-                        <h3 className="font-playfair mb-4 text-xl text-[#1A1A1A]">Submit Review</h3>
-                        <form onSubmit={handleSubmitReview} className="space-y-4">
+                        <h3 className="font-playfair mb-4 text-xl text-[#1A1A1A]">
+                            Submit Review
+                        </h3>
+                        <form
+                            onSubmit={handleSubmitReview}
+                            className="space-y-4"
+                        >
                             <div>
                                 <Label className="mb-2 block">Decision *</Label>
                                 <div className="flex gap-4">
@@ -629,33 +705,50 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                         <input
                                             type="radio"
                                             value="approved"
-                                            checked={reviewStatus === 'approved'}
-                                            onChange={() => setReviewStatus('approved')}
+                                            checked={
+                                                reviewStatus === 'approved'
+                                            }
+                                            onChange={() =>
+                                                setReviewStatus('approved')
+                                            }
                                             className="h-4 w-4 text-green-600"
                                         />
-                                        <span className="font-sans text-sm text-green-700">Approve</span>
+                                        <span className="font-sans text-sm text-green-700">
+                                            Approve
+                                        </span>
                                     </label>
                                     <label className="flex items-center gap-2">
                                         <input
                                             type="radio"
                                             value="rejected"
-                                            checked={reviewStatus === 'rejected'}
-                                            onChange={() => setReviewStatus('rejected')}
+                                            checked={
+                                                reviewStatus === 'rejected'
+                                            }
+                                            onChange={() =>
+                                                setReviewStatus('rejected')
+                                            }
                                             className="h-4 w-4 text-red-600"
                                         />
-                                        <span className="font-sans text-sm text-red-700">Reject</span>
+                                        <span className="font-sans text-sm text-red-700">
+                                            Reject
+                                        </span>
                                     </label>
                                 </div>
                             </div>
 
                             <div>
-                                <Label htmlFor="feedback" className="mb-2 block">
+                                <Label
+                                    htmlFor="feedback"
+                                    className="mb-2 block"
+                                >
                                     Feedback / Comments *
                                 </Label>
                                 <Textarea
                                     id="feedback"
                                     value={reviewFeedback}
-                                    onChange={(e) => setReviewFeedback(e.target.value)}
+                                    onChange={(e) =>
+                                        setReviewFeedback(e.target.value)
+                                    }
                                     placeholder="Provide your review comments here..."
                                     rows={6}
                                     required
@@ -663,11 +756,21 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                             </div>
 
                             <div className="flex gap-3">
-                                <Button type="submit" disabled={submittingReview} className="bg-[#1A1A1A] hover:bg-[#D4AF37]">
+                                <Button
+                                    type="submit"
+                                    disabled={submittingReview}
+                                    className="bg-[#1A1A1A] hover:bg-[#D4AF37]"
+                                >
                                     <Send className="mr-2 h-4 w-4" />
-                                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                    {submittingReview
+                                        ? 'Submitting...'
+                                        : 'Submit Review'}
                                 </Button>
-                                <Button type="button" variant="outline" onClick={() => setShowReviewForm(false)}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowReviewForm(false)}
+                                >
                                     Cancel
                                 </Button>
                             </div>
@@ -684,17 +787,34 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                             <div className="flex items-center gap-4">
                                 {getFileIcon()}
                                 <div className="flex-1">
-                                    <h3 className="font-playfair text-lg text-[#1A1A1A]">File Information</h3>
-                                    <p className="font-sans text-sm text-[#1A1A1A] font-medium">{document.file_name}</p>
+                                    <h3 className="font-playfair text-lg text-[#1A1A1A]">
+                                        File Information
+                                    </h3>
+                                    <p className="font-sans text-sm font-medium text-[#1A1A1A]">
+                                        {document.file_name}
+                                    </p>
                                     <div className="mt-2 flex flex-wrap gap-4 text-xs text-[#6C6863]">
-                                        <span>📄 Size: {document.file_size}</span>
-                                        <span>📁 Type: {getFileTypeDisplay()}</span>
-                                        {document.mime_type && document.mime_type !== 'application/octet-stream' && (
-                                            <span>🔧 MIME: {document.mime_type}</span>
-                                        )}
+                                        <span>
+                                            📄 Size: {document.file_size}
+                                        </span>
+                                        <span>
+                                            📁 Type: {getFileTypeDisplay()}
+                                        </span>
+                                        {document.mime_type &&
+                                            document.mime_type !==
+                                                'application/octet-stream' && (
+                                                <span>
+                                                    🔧 MIME:{' '}
+                                                    {document.mime_type}
+                                                </span>
+                                            )}
                                     </div>
                                 </div>
-                                <Button variant="outline" onClick={handlePreview} className="shrink-0">
+                                <Button
+                                    variant="outline"
+                                    onClick={handlePreview}
+                                    className="shrink-0"
+                                >
                                     <Eye className="mr-2 h-4 w-4" />
                                     {isPdf ? 'Read Online' : 'Preview'}
                                 </Button>
@@ -704,7 +824,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         {/* Abstract */}
                         {document.abstract && (
                             <div className="mb-8 border border-[#1A1A1A]/10 p-6">
-                                <h2 className="font-playfair mb-3 text-xl text-[#1A1A1A]">Abstract</h2>
+                                <h2 className="font-playfair mb-3 text-xl text-[#1A1A1A]">
+                                    Abstract
+                                </h2>
                                 <p className="font-sans text-sm leading-relaxed text-[#1A1A1A]">
                                     {document.abstract}
                                 </p>
@@ -714,7 +836,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         {/* Description */}
                         {document.description && (
                             <div className="mb-8 border border-[#1A1A1A]/10 p-6">
-                                <h2 className="font-playfair mb-3 text-xl text-[#1A1A1A]">Description</h2>
+                                <h2 className="font-playfair mb-3 text-xl text-[#1A1A1A]">
+                                    Description
+                                </h2>
                                 <p className="font-sans text-sm leading-relaxed text-[#1A1A1A]">
                                     {document.description}
                                 </p>
@@ -724,7 +848,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         {/* Keywords */}
                         {document.keywords && document.keywords.length > 0 && (
                             <div className="mb-8 border border-[#1A1A1A]/10 p-6">
-                                <h2 className="font-playfair mb-3 text-xl text-[#1A1A1A]">Keywords</h2>
+                                <h2 className="font-playfair mb-3 text-xl text-[#1A1A1A]">
+                                    Keywords
+                                </h2>
                                 <div className="flex flex-wrap gap-2">
                                     {document.keywords.map((keyword) => (
                                         <span
@@ -761,24 +887,42 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                     <div className="lg:col-span-4">
                         {/* Document Info */}
                         <div className="mb-6 border border-[#1A1A1A]/10 p-5">
-                            <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">Document Info</h3>
+                            <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">
+                                Document Info
+                            </h3>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-[#6C6863]">File Name</span>
-                                    <span className="text-[#1A1A1A] truncate max-w-[150px]">{document.file_name}</span>
+                                    <span className="text-[#6C6863]">
+                                        File Name
+                                    </span>
+                                    <span className="max-w-[150px] truncate text-[#1A1A1A]">
+                                        {document.file_name}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-[#6C6863]">File Size</span>
-                                    <span className="text-[#1A1A1A]">{document.file_size}</span>
+                                    <span className="text-[#6C6863]">
+                                        File Size
+                                    </span>
+                                    <span className="text-[#1A1A1A]">
+                                        {document.file_size}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-[#6C6863]">Citations</span>
-                                    <span className="text-[#D4AF37]">{document.citations}</span>
+                                    <span className="text-[#6C6863]">
+                                        Citations
+                                    </span>
+                                    <span className="text-[#D4AF37]">
+                                        {document.citations}
+                                    </span>
                                 </div>
                                 {document.submitted_at && (
                                     <div className="flex justify-between">
-                                        <span className="text-[#6C6863]">Submitted</span>
-                                        <span className="text-[#1A1A1A]">{document.submitted_at}</span>
+                                        <span className="text-[#6C6863]">
+                                            Submitted
+                                        </span>
+                                        <span className="text-[#1A1A1A]">
+                                            {document.submitted_at}
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -787,33 +931,60 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         {/* Contributors */}
                         {(collaborators.length > 0 || reviewer) && (
                             <div className="mb-6 border border-[#1A1A1A]/10 p-5">
-                                <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">Contributors</h3>
+                                <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">
+                                    Contributors
+                                </h3>
 
                                 {/* Primary Author */}
                                 <div className="mb-3 border-b border-[#1A1A1A]/10 pb-2">
-                                    <p className="font-sans text-sm font-medium text-[#1A1A1A]">Primary Author</p>
-                                    <p className="font-sans text-sm text-[#6C6863]">{author.name}</p>
+                                    <p className="font-sans text-sm font-medium text-[#1A1A1A]">
+                                        Primary Author
+                                    </p>
+                                    <p className="font-sans text-sm text-[#6C6863]">
+                                        {author.name}
+                                    </p>
                                 </div>
 
                                 {/* Co-authors */}
-                                {collaborators.filter(c => c.role === 'co-author').length > 0 && (
+                                {collaborators.filter(
+                                    (c) => c.role === 'co-author',
+                                ).length > 0 && (
                                     <div className="mb-3 border-b border-[#1A1A1A]/10 pb-2">
-                                        <p className="font-sans text-sm font-medium text-[#1A1A1A]">Co-authors</p>
-                                        {collaborators.filter(c => c.role === 'co-author').map((collab) => (
-                                            <div key={collab.id} className="mt-1">
-                                                <p className="font-sans text-sm text-[#6C6863]">{collab.name}</p>
-                                                <p className="font-sans text-xs text-[#6C6863]">{collab.email}</p>
-                                            </div>
-                                        ))}
+                                        <p className="font-sans text-sm font-medium text-[#1A1A1A]">
+                                            Co-authors
+                                        </p>
+                                        {collaborators
+                                            .filter(
+                                                (c) => c.role === 'co-author',
+                                            )
+                                            .map((collab) => (
+                                                <div
+                                                    key={collab.id}
+                                                    className="mt-1"
+                                                >
+                                                    <p className="font-sans text-sm text-[#6C6863]">
+                                                        {collab.name}
+                                                    </p>
+                                                    <p className="font-sans text-xs text-[#6C6863]">
+                                                        {collab.email}
+                                                    </p>
+                                                </div>
+                                            ))}
                                     </div>
                                 )}
 
                                 {/* Reviewer */}
                                 {reviewer && (
                                     <div>
-                                        <p className="font-sans text-sm font-medium text-[#1A1A1A]">Reviewer</p>
-                                        <p className="font-sans text-sm text-[#6C6863]">{reviewer.name}</p>
-                                        <p className="font-sans text-xs text-[#6C6863]">{reviewer.email}</p>
+                                        <p className="font-sans text-sm font-medium text-[#1A1A1A]">
+                                            Reviewer
+                                        </p>
+                                        <p className="font-sans text-sm text-[#6C6863]">
+                                            {reviewer.name}
+                                        </p>
+                                        <p className="font-sans text-xs text-[#6C6863]">
+                                            {reviewer.email}
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -822,7 +993,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         {/* Similar Documents */}
                         {similarDocuments.length > 0 && (
                             <div className="border border-[#1A1A1A]/10 p-5">
-                                <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">Similar Documents</h3>
+                                <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">
+                                    Similar Documents
+                                </h3>
                                 <div className="space-y-3">
                                     {similarDocuments.map((doc) => (
                                         <Link
@@ -833,7 +1006,9 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                             <p className="font-sans text-sm text-[#1A1A1A] transition-colors group-hover:text-[#D4AF37]">
                                                 {doc.title}
                                             </p>
-                                            <p className="font-sans text-xs text-[#6C6863]">{doc.user.name}</p>
+                                            <p className="font-sans text-xs text-[#6C6863]">
+                                                {doc.user.name}
+                                            </p>
                                         </Link>
                                     ))}
                                 </div>

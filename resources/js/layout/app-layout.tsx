@@ -1,4 +1,4 @@
-// resources/js/Pages/layout/app-layout.tsx
+// resources/js/Pages/Layouts/AppLayout.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
@@ -27,7 +27,13 @@ import {
     GraduationCap,
     Briefcase,
     Shield,
+    CheckCircle,
+    AlertCircle,
+    AlertTriangle,
+    Info,
+    X,
 } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -50,10 +56,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
     // Debug: Log user to see what's coming from the backend
     useEffect(() => {
-        console.log('AppLayout - All props:', props);
         console.log('AppLayout - User:', user);
         console.log('AppLayout - User Role:', user?.role);
-    }, [user, props]);
+    }, [user]);
 
     // Show flash messages
     useEffect(() => {
@@ -78,7 +83,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     // Get role-specific dashboard link
     const getDashboardLink = () => {
         const role = user?.role;
-        console.log('Getting dashboard link for role:', role);
 
         switch (role) {
             case 'admin':
@@ -129,9 +133,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             section: 'Digital Library',
             items: [
                 { name: 'Browse Archive', href: '/documents', icon: FileText },
-                { name: 'Recent Activity', href: '/recent', icon: Clock },
                 { name: 'Saved Papers', href: '/saved', icon: Bookmark },
-                { name: 'Trending', href: '/trending', icon: TrendingUp },
             ],
         });
 
@@ -146,7 +148,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                         icon: Download,
                     },
                     {
-                        name: 'My Manuscript',
+                        name: 'My Manuscripts',
                         href: '/student/my-manuscripts',
                         icon: Library,
                     },
@@ -156,22 +158,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
         if (user?.role === 'faculty') {
             navigationItems.push({
-                section: 'Review & Mentorship',
+                section: 'Review',
                 items: [
                     {
                         name: 'Pending Reviews',
-                        href: '/faculty/submissions',
+                        href: '/faculty/pending-submissions',
                         icon: Eye,
                     },
                     {
                         name: 'My Students',
                         href: '/faculty/students',
                         icon: Users,
-                    },
-                    {
-                        name: 'Review History',
-                        href: '/faculty/reviews',
-                        icon: Clock,
                     },
                 ],
             });
@@ -272,9 +269,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         }
     };
 
-    // Always render the layout structure, but show loading or nothing if no user
-    // Don't return early - always render the layout wrapper
-
     return (
         <div className="min-h-screen bg-[#F9F8F6]">
             {/* Toast Notification */}
@@ -345,20 +339,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
                             {/* User Actions */}
                             <div className="flex items-center gap-4">
-                                <button
-                                    className="relative p-2 text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                    onClick={() => {
-                                        setToast({
-                                            type: 'info',
-                                            message:
-                                                'You have 3 unread notifications.',
-                                        });
-                                        setTimeout(() => setToast(null), 5000);
-                                    }}
-                                >
-                                    <Bell className="h-5 w-5" />
-                                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-[#D4AF37]" />
-                                </button>
+                                {/* Notification Bell */}
+                                <NotificationBell />
 
                                 <div className="group relative">
                                     <button className="flex items-center gap-3 p-1">
@@ -509,7 +491,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 />
             )}
 
-            {/* Main Content Area - Always render, adjust padding based on user */}
+            {/* Main Content Area */}
             <main
                 className={`pt-16 transition-all duration-500 ${user ? 'lg:pl-64' : ''}`}
             >

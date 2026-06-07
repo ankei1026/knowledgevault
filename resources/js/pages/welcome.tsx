@@ -113,13 +113,6 @@ const Welcome: React.FC = () => {
                 'Secure access control for students, faculty, and administrators.',
             stat: '3 Roles',
         },
-        {
-            icon: Clock,
-            title: 'Automated Backup',
-            description:
-                'Regular archiving with timestamped preservation of all submissions.',
-            stat: '24/7',
-        },
     ];
 
     const stats = [
@@ -194,6 +187,12 @@ const Welcome: React.FC = () => {
                             >
                                 FAQ
                             </a>
+                            <Link
+                                href="/documents"
+                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
+                            >
+                                Archive
+                            </Link>
                         </div>
 
                         <div className="flex items-center gap-4">
@@ -253,6 +252,13 @@ const Welcome: React.FC = () => {
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 FAQ
+                            </a>
+                            <a
+                                href="/documents"
+                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Archive
                             </a>
                             <Link
                                 href="/login"
@@ -328,22 +334,25 @@ const Welcome: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-10 lg:col-span-4 lg:col-start-8 lg:mt-0">
+                            <div className="mt-10 lg:col-span-6 lg:col-start-7 lg:mt-0">
                                 <div className="group relative">
-                                    <div className="absolute -inset-4 bg-[#1A1A1A]/5 opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
-                                    <div className="relative overflow-hidden bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+                                    <div className="relative overflow-hidden bg-white shadow-[0_12px_48px_rgba(0,0,0,0.15)]">
                                         {/* Placeholder for mockup - replace with actual image */}
-                                        <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-[#EBE5DE] to-[#D4AF37]/20">
-                                            <FileText className="h-20 w-20 text-[#1A1A1A]/30" />
+                                        <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-[#EBE5DE] to-[#D4AF37]/20">
+                                            <img
+                                                src="/images/Documents.jpeg"
+                                                alt="Document Management Interface"
+                                                className="h-full w-full object-cover"
+                                            />
                                         </div>
                                         <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]" />
                                     </div>
                                 </div>
-                                <div className="mt-5 text-right">
-                                    <div className="font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
+                                <div className="mt-6 text-right">
+                                    <div className="font-sans text-[11px] tracking-[0.25em] text-[#6C6863] uppercase">
                                         Document Management Interface
                                     </div>
-                                    <div className="mt-2 h-px w-full bg-[#1A1A1A]/10" />
+                                    <div className="mt-3 h-px w-full bg-[#1A1A1A]/10" />
                                 </div>
                             </div>
                         </div>
@@ -380,7 +389,7 @@ const Welcome: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-10">
                             {features.map((feature, index) => {
                                 const Icon = feature.icon;
                                 return (
@@ -482,7 +491,7 @@ const Welcome: React.FC = () => {
                                     Purpose-built for
                                     <br />
                                     <span className="text-[#D4AF37] italic">
-                                        Capstone
+                                        Capstone and Research
                                     </span>{' '}
                                     Management
                                 </h2>
@@ -575,14 +584,7 @@ const Welcome: React.FC = () => {
                                     It's become an invaluable asset for our
                                     academic community."
                                 </p>
-                                <div className="mt-6">
-                                    <div className="font-sans text-sm font-medium text-[#1A1A1A]">
-                                        Dr. Maria Santos
-                                    </div>
-                                    <div className="mt-1 font-sans text-[11px] tracking-[0.2em] text-[#6C6863] uppercase">
-                                        Research Director, ASC
-                                    </div>
-                                </div>
+
                                 <div className="mt-6 flex justify-center gap-1.5">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                         <div

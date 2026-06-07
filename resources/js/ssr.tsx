@@ -14,8 +14,8 @@ createServer((page) =>
 
         resolve: (name) =>
             resolvePageComponent(
-                `./Pages/${name}.tsx`,
-                import.meta.glob('./Pages/**/*.tsx'),
+                `./pages/${name}.tsx`,
+                import.meta.glob('./pages/**/*.tsx'),
             ) as any,
 
         setup: ({ App, props }) => <App {...props} />,

@@ -44,9 +44,11 @@ const UploadManuscript: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    
+
     const [showInviteModal, setShowInviteModal] = useState(false);
-    const [uploadedDocumentId, setUploadedDocumentId] = useState<number | null>(null);
+    const [uploadedDocumentId, setUploadedDocumentId] = useState<number | null>(
+        null,
+    );
     const [uploadedDocumentTitle, setUploadedDocumentTitle] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('co-author');
@@ -74,7 +76,8 @@ const UploadManuscript: React.FC = () => {
             selectedFile &&
             (selectedFile.type === 'application/pdf' ||
                 selectedFile.type === 'application/msword' ||
-                selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                selectedFile.type ===
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         ) {
             setFile(selectedFile);
             setErrors((prev) => ({ ...prev, file: '' }));
@@ -103,7 +106,10 @@ const UploadManuscript: React.FC = () => {
     };
 
     const addKeyword = () => {
-        if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
+        if (
+            keywordInput.trim() &&
+            !formData.keywords.includes(keywordInput.trim())
+        ) {
             setFormData((prev) => ({
                 ...prev,
                 keywords: [...prev.keywords, keywordInput.trim()],
@@ -148,7 +154,7 @@ const UploadManuscript: React.FC = () => {
             onSuccess: (page: any) => {
                 setUploading(false);
                 toast.success('Manuscript uploaded successfully!');
-                
+
                 if (page.props.flash?.document) {
                     setUploadedDocumentId(page.props.flash.document.id);
                     setUploadedDocumentTitle(formData.title);
@@ -164,7 +170,9 @@ const UploadManuscript: React.FC = () => {
                 if (errors.file) {
                     toast.error('File upload failed. Please try again.');
                 } else {
-                    toast.error('Failed to upload manuscript. Please check your form.');
+                    toast.error(
+                        'Failed to upload manuscript. Please check your form.',
+                    );
                 }
                 setErrors(errors);
             },
@@ -174,37 +182,43 @@ const UploadManuscript: React.FC = () => {
     const handleSendInvite = (e: React.FormEvent) => {
         e.preventDefault();
         if (!uploadedDocumentId) return;
-        
+
         if (!inviteEmail.trim()) {
             toast.error('Please enter an email address');
             return;
         }
-        
+
         setSendingInvite(true);
 
-        router.post(`/student/documents/${uploadedDocumentId}/invite`, {
-            email: inviteEmail,
-            role: inviteRole,
-            message: inviteMessage,
-        }, {
-            onSuccess: () => {
-                toast.success(`Invitation sent to ${inviteEmail}`);
-                setInviteEmail('');
-                setInviteMessage('');
-                setSendingInvite(false);
-                setShowInviteModal(false);
-                router.get('/student/dashboard');
+        router.post(
+            `/student/documents/${uploadedDocumentId}/invite`,
+            {
+                email: inviteEmail,
+                role: inviteRole,
+                message: inviteMessage,
             },
-            onError: (error) => {
-                toast.error(error.message || 'Failed to send invitation');
-                setSendingInvite(false);
+            {
+                onSuccess: () => {
+                    toast.success(`Invitation sent to ${inviteEmail}`);
+                    setInviteEmail('');
+                    setInviteMessage('');
+                    setSendingInvite(false);
+                    setShowInviteModal(false);
+                    router.get('/student/dashboard');
+                },
+                onError: (error) => {
+                    toast.error(error.message || 'Failed to send invitation');
+                    setSendingInvite(false);
+                },
             },
-        });
+        );
     };
 
     const handleSkipInvite = () => {
         setShowInviteModal(false);
-        toast.success('You can invite collaborators later from your document page');
+        toast.success(
+            'You can invite collaborators later from your document page',
+        );
         router.get('/student/dashboard');
     };
 
@@ -224,12 +238,16 @@ const UploadManuscript: React.FC = () => {
                         <h1 className="font-playfair mb-2 text-4xl leading-[1.1] text-[#1A1A1A] md:text-5xl">
                             Upload Manuscript
                         </h1>
-                        <p className="font-sans text-base text-[#6C6863]">Loading upload form...</p>
+                        <p className="font-sans text-base text-[#6C6863]">
+                            Loading upload form...
+                        </p>
                     </div>
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
                             <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                            <p className="font-sans text-sm text-[#6C6863]">Loading...</p>
+                            <p className="font-sans text-sm text-[#6C6863]">
+                                Loading...
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -254,7 +272,8 @@ const UploadManuscript: React.FC = () => {
                         Upload Manuscript
                     </h1>
                     <p className="font-sans text-base text-[#6C6863]">
-                        Share your capstone research with the academic community. All submissions are reviewed by faculty.
+                        Share your capstone research with the academic
+                        community. All submissions are reviewed by faculty.
                     </p>
                 </div>
 
@@ -267,8 +286,10 @@ const UploadManuscript: React.FC = () => {
                         <div
                             onDragOver={handleDragOver}
                             onDrop={handleDrop}
-                            className={`mt-2 cursor-pointer border-2 border-dashed p-8 text-center transition-all duration-500 hover:border-[#D4AF37] border-[#1A1A1A]/20`}
-                            onClick={() => document.getElementById('file-input')?.click()}
+                            className={`mt-2 cursor-pointer border-2 border-dashed border-[#1A1A1A]/20 p-8 text-center transition-all duration-500 hover:border-[#D4AF37]`}
+                            onClick={() =>
+                                document.getElementById('file-input')?.click()
+                            }
                         >
                             <input
                                 id="file-input"
@@ -281,9 +302,14 @@ const UploadManuscript: React.FC = () => {
                                 <div className="flex items-center justify-center gap-3">
                                     <FileText className="h-8 w-8 text-[#D4AF37]" />
                                     <div>
-                                        <p className="font-sans text-sm text-[#1A1A1A]">{file.name}</p>
+                                        <p className="font-sans text-sm text-[#1A1A1A]">
+                                            {file.name}
+                                        </p>
                                         <p className="font-sans text-xs text-[#6C6863]">
-                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                            {(file.size / 1024 / 1024).toFixed(
+                                                2,
+                                            )}{' '}
+                                            MB
                                         </p>
                                     </div>
                                     <button
@@ -304,39 +330,63 @@ const UploadManuscript: React.FC = () => {
                                         Drag & drop or click to browse
                                     </p>
                                     <p className="mt-1 font-sans text-xs text-[#6C6863]">
-                                        PDF, DOC, DOCX (Max 20MB)
+                                        PDF, DOC, DOCX (Max 120MB)
                                     </p>
                                 </div>
                             )}
                         </div>
-                        {errors.file && <p className="mt-2 text-xs text-red-600">{errors.file}</p>}
+                        {errors.file && (
+                            <p className="mt-2 text-xs text-red-600">
+                                {errors.file}
+                            </p>
+                        )}
                     </div>
 
                     {/* Title */}
                     <div className="border border-[#1A1A1A]/10 p-6">
-                        <Label htmlFor="title" className="mb-2 block text-sm font-medium text-[#1A1A1A]">
+                        <Label
+                            htmlFor="title"
+                            className="mb-2 block text-sm font-medium text-[#1A1A1A]"
+                        >
                             Title *
                         </Label>
                         <Input
                             id="title"
                             type="text"
                             value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    title: e.target.value,
+                                })
+                            }
                             placeholder="Enter your manuscript title"
                             className="w-full"
                         />
-                        {errors.title && <p className="mt-2 text-xs text-red-600">{errors.title}</p>}
+                        {errors.title && (
+                            <p className="mt-2 text-xs text-red-600">
+                                {errors.title}
+                            </p>
+                        )}
                     </div>
 
                     {/* Abstract */}
                     <div className="border border-[#1A1A1A]/10 p-6">
-                        <Label htmlFor="abstract" className="mb-2 block text-sm font-medium text-[#1A1A1A]">
+                        <Label
+                            htmlFor="abstract"
+                            className="mb-2 block text-sm font-medium text-[#1A1A1A]"
+                        >
                             Abstract
                         </Label>
                         <Textarea
                             id="abstract"
                             value={formData.abstract}
-                            onChange={(e) => setFormData({ ...formData, abstract: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    abstract: e.target.value,
+                                })
+                            }
                             placeholder="Summarize your research (150-250 words)"
                             rows={5}
                             className="w-full resize-none"
@@ -348,13 +398,21 @@ const UploadManuscript: React.FC = () => {
 
                     {/* Description */}
                     <div className="border border-[#1A1A1A]/10 p-6">
-                        <Label htmlFor="description" className="mb-2 block text-sm font-medium text-[#1A1A1A]">
+                        <Label
+                            htmlFor="description"
+                            className="mb-2 block text-sm font-medium text-[#1A1A1A]"
+                        >
                             Description
                         </Label>
                         <Textarea
                             id="description"
                             value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    description: e.target.value,
+                                })
+                            }
                             placeholder="Provide additional details about your research"
                             rows={4}
                             className="w-full resize-none"
@@ -370,12 +428,22 @@ const UploadManuscript: React.FC = () => {
                             <Input
                                 type="text"
                                 value={keywordInput}
-                                onChange={(e) => setKeywordInput(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                                onChange={(e) =>
+                                    setKeywordInput(e.target.value)
+                                }
+                                onKeyPress={(e) =>
+                                    e.key === 'Enter' &&
+                                    (e.preventDefault(), addKeyword())
+                                }
                                 placeholder="Add keywords (e.g., AI, Education, Research)"
                                 className="flex-1"
                             />
-                            <Button type="button" onClick={addKeyword} variant="outline" size="sm">
+                            <Button
+                                type="button"
+                                onClick={addKeyword}
+                                variant="outline"
+                                size="sm"
+                            >
                                 <Plus className="h-4 w-4" />
                                 Add
                             </Button>
@@ -390,7 +458,9 @@ const UploadManuscript: React.FC = () => {
                                         {keyword}
                                         <button
                                             type="button"
-                                            onClick={() => removeKeyword(keyword)}
+                                            onClick={() =>
+                                                removeKeyword(keyword)
+                                            }
                                             className="text-[#6C6863] hover:text-red-500"
                                         >
                                             <Trash2 className="h-3 w-3" />
@@ -411,28 +481,50 @@ const UploadManuscript: React.FC = () => {
                                 <input
                                     type="radio"
                                     checked={formData.is_public}
-                                    onChange={() => setFormData({ ...formData, is_public: true })}
+                                    onChange={() =>
+                                        setFormData({
+                                            ...formData,
+                                            is_public: true,
+                                        })
+                                    }
                                     className="h-4 w-4 border-[#1A1A1A]/20 text-[#D4AF37] focus:ring-[#D4AF37]"
                                 />
-                                <span className="font-sans text-sm text-[#1A1A1A]">Public</span>
-                                <span className="font-sans text-xs text-[#6C6863]">(Visible to all users)</span>
+                                <span className="font-sans text-sm text-[#1A1A1A]">
+                                    Public
+                                </span>
+                                <span className="font-sans text-xs text-[#6C6863]">
+                                    (Visible to all users)
+                                </span>
                             </label>
                             <label className="flex cursor-pointer items-center gap-2">
                                 <input
                                     type="radio"
                                     checked={!formData.is_public}
-                                    onChange={() => setFormData({ ...formData, is_public: false })}
+                                    onChange={() =>
+                                        setFormData({
+                                            ...formData,
+                                            is_public: false,
+                                        })
+                                    }
                                     className="h-4 w-4 border-[#1A1A1A]/20 text-[#D4AF37] focus:ring-[#D4AF37]"
                                 />
-                                <span className="font-sans text-sm text-[#1A1A1A]">Private</span>
-                                <span className="font-sans text-xs text-[#6C6863]">(Only you and reviewers)</span>
+                                <span className="font-sans text-sm text-[#1A1A1A]">
+                                    Private
+                                </span>
+                                <span className="font-sans text-xs text-[#6C6863]">
+                                    (Only you and reviewers)
+                                </span>
                             </label>
                         </div>
                     </div>
 
                     {/* Submit Button */}
                     <div className="flex gap-4">
-                        <Button type="submit" disabled={uploading} className="group relative h-12 bg-[#1A1A1A] px-8 hover:bg-[#D4AF37]">
+                        <Button
+                            type="submit"
+                            disabled={uploading}
+                            className="group relative h-12 bg-[#1A1A1A] px-8 hover:bg-[#D4AF37]"
+                        >
                             {uploading ? (
                                 <>
                                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -445,7 +537,11 @@ const UploadManuscript: React.FC = () => {
                                 </>
                             )}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => router.get('/student/dashboard')}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => router.get('/student/dashboard')}
+                        >
                             Cancel
                         </Button>
                     </div>
@@ -459,11 +555,14 @@ const UploadManuscript: React.FC = () => {
                             Submission Guidelines
                         </span>
                     </div>
-                    <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">Before you upload</h3>
+                    <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">
+                        Before you upload
+                    </h3>
                     <ul className="space-y-2 font-sans text-sm text-[#6C6863]">
                         <li className="flex items-start gap-2">
                             <CheckCircle className="mt-0.5 h-4 w-4 text-[#D4AF37]" />
-                            Ensure your manuscript follows the ASC capstone format
+                            Ensure your manuscript follows the ASC capstone
+                            format
                         </li>
                         <li className="flex items-start gap-2">
                             <CheckCircle className="mt-0.5 h-4 w-4 text-[#D4AF37]" />
@@ -475,7 +574,7 @@ const UploadManuscript: React.FC = () => {
                         </li>
                         <li className="flex items-start gap-2">
                             <CheckCircle className="mt-0.5 h-4 w-4 text-[#D4AF37]" />
-                            Maximum file size is 20MB
+                            Maximum file size is 120MB
                         </li>
                     </ul>
                 </div>
@@ -487,23 +586,37 @@ const UploadManuscript: React.FC = () => {
                     <div className="relative w-full max-w-2xl border border-[#1A1A1A]/20 bg-[#F9F8F6]">
                         <div className="flex items-center justify-between border-b border-[#1A1A1A]/10 p-4">
                             <div>
-                                <h3 className="font-playfair text-xl text-[#1A1A1A]">Invite Collaborators</h3>
-                                <p className="mt-1 font-sans text-sm text-[#6C6863]">{uploadedDocumentTitle}</p>
+                                <h3 className="font-playfair text-xl text-[#1A1A1A]">
+                                    Invite Collaborators
+                                </h3>
+                                <p className="mt-1 font-sans text-sm text-[#6C6863]">
+                                    {uploadedDocumentTitle}
+                                </p>
                             </div>
-                            <button onClick={handleSkipInvite} className="text-[#6C6863] transition-colors hover:text-[#D4AF37]">
+                            <button
+                                onClick={handleSkipInvite}
+                                className="text-[#6C6863] transition-colors hover:text-[#D4AF37]"
+                            >
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
                         <div className="p-6">
-                            <form onSubmit={handleSendInvite} className="space-y-4">
+                            <form
+                                onSubmit={handleSendInvite}
+                                className="space-y-4"
+                            >
                                 <div>
-                                    <Label className="mb-2 block">Email Address *</Label>
+                                    <Label className="mb-2 block">
+                                        Email Address *
+                                    </Label>
                                     <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
+                                        <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                                         <Input
                                             type="email"
                                             value={inviteEmail}
-                                            onChange={(e) => setInviteEmail(e.target.value)}
+                                            onChange={(e) =>
+                                                setInviteEmail(e.target.value)
+                                            }
                                             placeholder="colleague@example.com"
                                             className="pl-9"
                                             required
@@ -513,7 +626,10 @@ const UploadManuscript: React.FC = () => {
 
                                 <div>
                                     <Label className="mb-2 block">Role *</Label>
-                                    <Select value={inviteRole} onValueChange={setInviteRole}>
+                                    <Select
+                                        value={inviteRole}
+                                        onValueChange={setInviteRole}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
@@ -521,13 +637,19 @@ const UploadManuscript: React.FC = () => {
                                             <SelectItem value="co-author">
                                                 <div className="flex items-center gap-2">
                                                     <Users className="h-4 w-4" />
-                                                    <span>Co-author - Can edit and submit</span>
+                                                    <span>
+                                                        Co-author - Can edit and
+                                                        submit
+                                                    </span>
                                                 </div>
                                             </SelectItem>
                                             <SelectItem value="reviewer">
                                                 <div className="flex items-center gap-2">
                                                     <Eye className="h-4 w-4" />
-                                                    <span>Reviewer - Can review and comment</span>
+                                                    <span>
+                                                        Reviewer - Can review
+                                                        and comment
+                                                    </span>
                                                 </div>
                                             </SelectItem>
                                         </SelectContent>
@@ -535,10 +657,14 @@ const UploadManuscript: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <Label className="mb-2 block">Personal Message (Optional)</Label>
+                                    <Label className="mb-2 block">
+                                        Personal Message (Optional)
+                                    </Label>
                                     <textarea
                                         value={inviteMessage}
-                                        onChange={(e) => setInviteMessage(e.target.value)}
+                                        onChange={(e) =>
+                                            setInviteMessage(e.target.value)
+                                        }
                                         placeholder="I'd like to invite you to collaborate on my research..."
                                         rows={3}
                                         className="w-full border border-[#1A1A1A]/20 bg-transparent p-2 font-sans text-sm transition-colors duration-500 focus:border-[#D4AF37] focus:outline-none"
@@ -546,11 +672,21 @@ const UploadManuscript: React.FC = () => {
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <Button type="submit" disabled={sendingInvite} className="flex-1 bg-[#1A1A1A] hover:bg-[#D4AF37]">
+                                    <Button
+                                        type="submit"
+                                        disabled={sendingInvite}
+                                        className="flex-1 bg-[#1A1A1A] hover:bg-[#D4AF37]"
+                                    >
                                         <Send className="mr-2 h-4 w-4" />
-                                        {sendingInvite ? 'Sending...' : 'Send Invitation'}
+                                        {sendingInvite
+                                            ? 'Sending...'
+                                            : 'Send Invitation'}
                                     </Button>
-                                    <Button type="button" variant="outline" onClick={handleSkipInvite}>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleSkipInvite}
+                                    >
                                         Skip
                                     </Button>
                                 </div>

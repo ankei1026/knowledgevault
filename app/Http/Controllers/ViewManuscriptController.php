@@ -7,6 +7,7 @@ use App\Models\Document;
 use App\Models\Invitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ViewManuscriptController extends Controller

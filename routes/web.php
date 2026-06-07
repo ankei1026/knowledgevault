@@ -4,14 +4,28 @@
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminUserManagementController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FacultyDashboardController;
+use App\Http\Controllers\FacultyReviewController;
+use App\Http\Controllers\GuestViewDocumentController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\StudentDashboardController;
+use App\Http\Controllers\StudentFacultyReviewerController;
 use App\Http\Controllers\StudentInvitationController;
 use App\Http\Controllers\StudentMyManuscriptController;
 use App\Http\Controllers\StudentUploadManuscriptController;
 use App\Http\Controllers\ViewManuscriptController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::inertia('/', 'welcome')->name('home');
+
+Route::get('/documents', [GuestViewDocumentController::class, 'index'])
+    ->name('guest.documents');
+
+// Add individual document view route (optional)
+Route::get('/documents/{id}', function ($id) {
+    return Inertia::render('Guest/DocumentDetail', ['documentId' => $id]);
+})->name('guest.document.show');
 
 // Guest routes (only accessible when not logged in)
 Route::middleware('guest')->group(function () {
@@ -21,7 +35,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 });
 
-Route::get('/invitations/accept/{token}', [InvitaionCOntr::class, 'accept'])->name('invitations.accept');
+Route::get('/invitations/accept/{token}', [InvitationController::class, 'accept'])->name('invitations.accept');
 Route::get('/invitations/decline/{token}', [InvitationController::class, 'decline'])->name('invitations.decline');
 
 // Auth routes (requires authentication)
@@ -49,6 +63,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
 
+    Route::post('/documents/{documentId}/assign-reviewer', [StudentFacultyReviewerController::class, 'assignReviewer'])->name('documents.assign-reviewer');
+
     Route::get('/documents/upload', [StudentUploadManuscriptController::class, 'create'])->name('documents.upload');
     Route::post('/documents', [StudentUploadManuscriptController::class, 'store'])->name('documents.store');
     Route::post('/documents/{id}/submit', [StudentUploadManuscriptController::class, 'submitForReview'])->name('documents.submit');
@@ -71,4 +87,25 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::post('/my-manuscripts/{id}/submit', [StudentMyManuscriptController::class, 'submitForReview'])->name('my-manuscripts.submit');
     Route::delete('/my-manuscripts/{id}', [StudentMyManuscriptController::class, 'destroy'])->name('my-manuscripts.destroy');
     Route::get('/my-manuscripts/{id}/analytics', [StudentMyManuscriptController::class, 'analytics'])->name('my-manuscripts.analytics');
+});
+
+// Faculty routes
+Route::middleware(['auth', 'role:faculty'])->prefix('faculty')->name('faculty.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [FacultyDashboardController::class, 'index'])->name('dashboard');
+
+    // Submissions management
+    Route::get('/pending-submissions', [FacultyDashboardController::class, 'pendingSubmissions'])->name('pending-submissions');
+    Route::get('/review-history', [FacultyDashboardController::class, 'reviewHistory'])->name('review-history');
+
+    // Review actions
+    Route::get('/review/{id}', [FacultyDashboardController::class, 'showReviewForm'])->name('review.show');
+    Route::post('/review/{id}', [FacultyDashboardController::class, 'submitReview'])->name('review.submit');
+
+    Route::get('/pending-submissions', [FacultyReviewController::class, 'pendingSubmissions'])->name('pending-submissions');
+    Route::get('/review-history', [FacultyReviewController::class, 'reviewHistory'])->name('review-history');
+
+    // Review actions
+    Route::get('/review/{id}', [FacultyReviewController::class, 'show'])->name('review.show');
+    Route::post('/review/{id}', [FacultyReviewController::class, 'submitReview'])->name('review.submit');
 });
