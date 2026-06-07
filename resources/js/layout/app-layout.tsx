@@ -88,7 +88,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             case 'student':
                 return '/student/dashboard';
             default:
-                return '/dashboard';
+                return '/student/dashboard';
         }
     };
 
@@ -146,8 +146,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                         icon: Download,
                     },
                     {
-                        name: 'My Library',
-                        href: '/student/library',
+                        name: 'My Manuscript',
+                        href: '/student/my-manuscripts',
                         icon: Library,
                     },
                 ],

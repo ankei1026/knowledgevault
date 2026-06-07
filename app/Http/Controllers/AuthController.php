@@ -80,7 +80,7 @@ class AuthController extends Controller
         return match ($role) {
             'admin' => '/admin/dashboard',
             'faculty' => '/faculty/dashboard',
-            default => '/dashboard',
+            default => '/student/dashboard',
         };
     }
 }

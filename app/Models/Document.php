@@ -268,4 +268,44 @@ class Document extends Model
     {
         return $user->role === 'faculty' || $user->role === 'admin';
     }
+
+    public function collaborators()
+    {
+        return $this->belongsToMany(User::class, 'document_collaborators')
+            ->withPivot('role', 'status', 'permissions')
+            ->withTimestamps();
+    }
+
+    public function coAuthors()
+    {
+        return $this->belongsToMany(User::class, 'document_collaborators')
+            ->wherePivot('role', 'co-author')
+            ->withPivot('status', 'permissions');
+    }
+
+    public function reviewers()
+    {
+        return $this->belongsToMany(User::class, 'document_collaborators')
+            ->wherePivot('role', 'reviewer')
+            ->withPivot('status', 'permissions');
+    }
+
+    public function invitations()
+    {
+        return $this->hasMany(Invitation::class);
+    }
+
+    public function getFileTypeAttribute(): string
+    {
+        return match ($this->mime_type) {
+            'application/pdf' => 'PDF Document',
+            'application/msword' => 'Word Document',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'Word Document',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'Excel Spreadsheet',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'PowerPoint Presentation',
+            'text/plain' => 'Text File',
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp' => 'Image',
+            default => 'Document',
+        };
+    }
 }

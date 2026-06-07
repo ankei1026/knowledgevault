@@ -758,7 +758,7 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                 )}
                             </div>
 
-                            <div>
+                            <div className='w-full'> 
                                 <Label htmlFor="role">Role *</Label>
                                 <Select
                                     value={formData.role}
@@ -768,11 +768,12 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                             role: value,
                                         })
                                     }
+                                    
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger className='w-full'>
                                         <SelectValue placeholder="Select role" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className='w-full'>
                                         <SelectItem value="student">
                                             Student
                                         </SelectItem>
