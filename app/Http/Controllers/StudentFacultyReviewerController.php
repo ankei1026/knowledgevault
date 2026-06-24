@@ -97,8 +97,7 @@ class StudentFacultyReviewerController extends Controller
             \Log::error('Failed to send notification to student: ' . $e->getMessage());
         }
 
-        return redirect()->route('student.documents.show', $document->id)
-            ->with('success', "Reviewer assigned successfully! {$reviewer->name} has been notified.");
+        return back()->with('success', "Reviewer assigned successfully! {$reviewer->name} has been notified.");
     }
 
     /**

@@ -24,7 +24,7 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('/guest/documents', [GuestViewDocumentController::class, 'index'])
     ->name('guest.documents');
 Route::get('/guest/documents/{id}', [GuestViewDocumentController::class, 'show'])
-    ->name('documents.show');
+    ->name('guest.documents.show');
 
 Route::get('/documents/{id}', function ($id) {
     return Inertia::render('Guest/DocumentDetail', ['documentId' => $id]);

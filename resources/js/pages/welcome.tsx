@@ -1,4 +1,5 @@
 // resources/js/Pages/Welcome.tsx
+
 import React, { useEffect, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import {
@@ -14,6 +15,10 @@ import {
     Award,
     Menu,
     X,
+    User,
+    Github,
+    Linkedin,
+    Mail,
 } from 'lucide-react';
 
 // Custom CSS for luxury/editorial styles that complement shadcn
@@ -57,6 +62,19 @@ const luxuryStyles = `
     animation: fadeIn 0.5s ease-out forwards;
   }
 
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .group-hover\\:grayscale-0,
     .group-hover\\:scale-105,
@@ -74,6 +92,13 @@ interface Feature {
     title: string;
     description: string;
     stat?: string;
+}
+
+interface TeamMember {
+    id: number;
+    name: string;
+    role: string;
+    image: string;
 }
 
 const Welcome: React.FC = () => {
@@ -141,6 +166,39 @@ const Welcome: React.FC = () => {
         },
     ];
 
+    const teamMembers: TeamMember[] = [
+        {
+            id: 1,
+            name: 'Czarha O. Limpuasan',
+            role: 'Member',
+            image: '/images/Czarha.jpg',
+        },
+        {
+            id: 2,
+            name: 'Nathaniel G. Vito Jr.',
+            role: 'Member',
+            image: '/images/Nathaniel.jpg',
+        },
+        {
+            id: 3,
+            name: 'Radz C. Dela Peña',
+            role: 'Member',
+            image: '/images/Radz.jpg',
+        },
+        {
+            id: 4,
+            name: 'Elson Morales',
+            role: 'Member',
+            image: '/images/team/rodelio.jpg',
+        },
+        {
+            id: 5,
+            name: 'Kay Bagwasan',
+            role: 'Member',
+            image: '/images/team/maryjane.jpg',
+        },
+    ];
+
     return (
         <>
             <Head title="ASC KnowledgeVault - Document Management System" />
@@ -148,7 +206,7 @@ const Welcome: React.FC = () => {
             {/* Noise Overlay */}
             <div className="noise-overlay" />
 
-            {/* Navigation - Overriding shadcn styles for luxury feel */}
+            {/* Navigation */}
             <nav className="fixed top-0 right-0 left-0 z-50 border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/95 backdrop-blur-sm">
                 <div className="mx-auto max-w-[1600px] px-6 py-5 lg:px-16">
                     <div className="flex items-center justify-between">
@@ -176,6 +234,12 @@ const Welcome: React.FC = () => {
                                 About
                             </a>
                             <a
+                                href="#team"
+                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
+                            >
+                                Team
+                            </a>
+                            <a
                                 href="#stats"
                                 className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
                             >
@@ -200,7 +264,7 @@ const Welcome: React.FC = () => {
                                 href="/login"
                                 className="group relative hidden h-11 items-center overflow-hidden bg-[#1A1A1A] px-6 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] md:flex"
                             >
-                                <span className="absolute inset-0 translate-x-[-100%] bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
+                                <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
                                 <span className="relative z-10 font-sans text-[11px] font-medium tracking-[0.2em] text-white uppercase">
                                     Access Vault
                                 </span>
@@ -240,6 +304,13 @@ const Welcome: React.FC = () => {
                                 About
                             </a>
                             <a
+                                href="#team"
+                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Team
+                            </a>
+                            <a
                                 href="#stats"
                                 className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
                                 onClick={() => setMobileMenuOpen(false)}
@@ -265,7 +336,7 @@ const Welcome: React.FC = () => {
                                 className="group relative inline-block h-11 overflow-hidden bg-[#1A1A1A] px-6 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                <span className="absolute inset-0 translate-x-[-100%] bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
+                                <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
                                 <span className="relative z-10 font-sans text-[11px] font-medium tracking-[0.2em] text-white uppercase">
                                     Access Vault
                                 </span>
@@ -279,13 +350,6 @@ const Welcome: React.FC = () => {
                 {/* Hero Section */}
                 <section className="relative flex min-h-screen items-center border-b border-[#1A1A1A]/10">
                     <div className="mx-auto w-full max-w-[1600px] px-6 py-16 lg:px-16 lg:py-32">
-                        {/* Vertical Label */}
-                        <div className="absolute top-1/2 left-6 hidden -translate-y-1/2 xl:block">
-                            <div className="writing-mode-vertical font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
-                                Capstone 2025 • Vol. 01
-                            </div>
-                        </div>
-
                         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
                             <div className="lg:col-span-5 lg:col-start-2">
                                 <div className="mb-6 flex items-center gap-4">
@@ -317,7 +381,7 @@ const Welcome: React.FC = () => {
                                         href="/register"
                                         className="group relative inline-flex h-12 items-center justify-center overflow-hidden bg-[#1A1A1A] px-8 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
                                     >
-                                        <span className="absolute inset-0 translate-x-[-100%] bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
+                                        <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
                                         <span className="relative z-10 font-sans text-xs font-medium tracking-[0.2em] text-white uppercase">
                                             Get Started
                                         </span>
@@ -337,7 +401,6 @@ const Welcome: React.FC = () => {
                             <div className="mt-10 lg:col-span-6 lg:col-start-7 lg:mt-0">
                                 <div className="group relative">
                                     <div className="relative overflow-hidden bg-white shadow-[0_12px_48px_rgba(0,0,0,0.15)]">
-                                        {/* Placeholder for mockup - replace with actual image */}
                                         <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-[#EBE5DE] to-[#D4AF37]/20">
                                             <img
                                                 src="/images/Documents.jpeg"
@@ -414,6 +477,63 @@ const Welcome: React.FC = () => {
                     </div>
                 </section>
 
+                {/* Team Section */}
+                <section
+                    id="team"
+                    className="border-b border-[#1A1A1A]/10 py-20 lg:py-28"
+                >
+                    <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
+                        <div className="mb-16 text-center">
+                            <div className="mb-5 flex justify-center gap-4">
+                                <div className="h-px w-8 bg-[#D4AF37]" />
+                                <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
+                                    The Makers
+                                </span>
+                                <div className="h-px w-8 bg-[#D4AF37]" />
+                            </div>
+                            <h2 className="font-playfair text-4xl leading-[1.1] text-[#1A1A1A] md:text-5xl lg:text-6xl">
+                                Meet the{' '}
+                                <span className="text-[#D4AF37] italic">
+                                    Capstone Team
+                                </span>
+                            </h2>
+                            <p className="mx-auto mt-4 max-w-2xl font-sans text-base text-[#6C6863]">
+                                The brilliant minds behind ASC KnowledgeVault,
+                                dedicated to revolutionizing academic archiving.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {teamMembers.map((member) => (
+                                <div
+                                    key={member.id}
+                                    className="group border border-[#1A1A1A]/10 p-6 text-center transition-all duration-500 hover:border-[#D4AF37] hover:shadow-md"
+                                >
+                                    <div className="relative mx-auto mb-4 h-32 w-32 overflow-hidden border border-[#1A1A1A]/10 transition-all duration-500 group-hover:border-[#D4AF37] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
+                                        {member.image ? (
+                                            <img
+                                                src={member.image}
+                                                alt={member.name}
+                                                className="h-full w-full object-cover grayscale transition-all duration-1000 group-hover:scale-105 group-hover:grayscale-0"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center bg-[#EBE5DE]">
+                                                <User className="h-12 w-12 text-[#6C6863]" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h3 className="font-playfair text-lg text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37]">
+                                        {member.name}
+                                    </h3>
+                                    <p className="mt-1 font-sans text-sm text-[#6C6863]">
+                                        {member.role}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
                 {/* Stats Section - Dark */}
                 <section
                     id="stats"
@@ -473,7 +593,7 @@ const Welcome: React.FC = () => {
                     </div>
                 </section>
 
-                {/* About Section with Mockup Gallery */}
+                {/* About Section */}
                 <section
                     id="about"
                     className="border-b border-[#1A1A1A]/10 py-20 lg:py-28"
@@ -563,149 +683,6 @@ const Welcome: React.FC = () => {
                         </div>
                     </div>
                 </section>
-
-                {/* Testimonial Section */}
-                <section className="border-b border-[#1A1A1A]/10 bg-[#F9F8F6] py-20 lg:py-28">
-                    <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
-                        <div className="grid justify-center lg:grid-cols-12">
-                            <div className="text-center lg:col-span-8 lg:col-start-3">
-                                <div className="mb-5 flex justify-center">
-                                    <div className="h-px w-10 bg-[#D4AF37]" />
-                                </div>
-                                <p className="font-playfair text-2xl leading-relaxed text-[#1A1A1A] italic md:text-3xl lg:text-4xl">
-                                    "The KnowledgeVault has revolutionized how
-                                    we preserve and access student research.
-                                    It's become an invaluable asset for our
-                                    academic community."
-                                </p>
-
-                                <div className="mt-6 flex justify-center gap-1.5">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <div
-                                            key={star}
-                                            className="h-3 w-3 bg-[#D4AF37] transition-transform duration-500 hover:scale-110"
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* FAQ Section */}
-                {/* <section
-                    id="faq"
-                    className="border-b border-[#1A1A1A]/10 py-20 lg:py-28"
-                >
-                    <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
-                        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-                            <div className="lg:col-span-3 lg:col-start-2">
-                                <div className="sticky top-28">
-                                    <div className="mb-5 flex items-center gap-4">
-                                        <div className="h-px w-8 bg-[#D4AF37]" />
-                                        <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
-                                            Common Questions
-                                        </span>
-                                    </div>
-                                    <h2 className="font-playfair text-4xl leading-[1.1] text-[#1A1A1A] md:text-5xl">
-                                        Everything you
-                                        <br />
-                                        <span className="text-[#D4AF37] italic">
-                                            need to know
-                                        </span>
-                                    </h2>
-                                    <div className="mt-6 h-px w-16 bg-[#1A1A1A]/20" />
-                                </div>
-                            </div>
-
-                            <div className="lg:col-span-5 lg:col-start-6">
-                                <div className="space-y-5">
-                                    {faqs.map((faq, index) => (
-                                        <div
-                                            key={index}
-                                            className="border-t border-[#1A1A1A]/10 pt-5"
-                                        >
-                                            <button
-                                                onClick={() =>
-                                                    setActiveFaq(
-                                                        activeFaq === index
-                                                            ? null
-                                                            : index,
-                                                    )
-                                                }
-                                                className="group flex w-full items-center justify-between text-left"
-                                            >
-                                                <span className="font-playfair text-base text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37] lg:text-lg">
-                                                    {faq.q}
-                                                </span>
-                                                <div
-                                                    className={`flex h-5 w-5 items-center justify-center border border-[#1A1A1A]/20 transition-all duration-500 ${activeFaq === index ? 'rotate-90 border-[#D4AF37]' : 'group-hover:border-[#D4AF37]'}`}
-                                                >
-                                                    <ChevronDown
-                                                        className={`h-3 w-3 transition-transform duration-500 ${activeFaq === index ? 'rotate-180' : ''}`}
-                                                    />
-                                                </div>
-                                            </button>
-                                            <div
-                                                className={`overflow-hidden transition-all duration-500 ease-out ${activeFaq === index ? 'mt-3 max-h-32 opacity-100' : 'max-h-0 opacity-0'}`}
-                                            >
-                                                <p className="border-l-2 border-[#D4AF37]/30 pl-3 font-sans text-sm leading-relaxed text-[#6C6863]">
-                                                    {faq.a}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section> */}
-
-                {/* CTA Section */}
-                {/* <section className="bg-[#1A1A1A] py-20 lg:py-28">
-                    <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
-                        <div className="grid items-center gap-10 text-center lg:grid-cols-12 lg:text-left">
-                            <div className="lg:col-span-8 lg:col-start-2">
-                                <div className="mb-5 flex items-center justify-center gap-4 lg:justify-start">
-                                    <div className="h-px w-10 bg-[#D4AF37]" />
-                                    <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
-                                        Join The Archive
-                                    </span>
-                                </div>
-                                <h2 className="font-playfair text-4xl leading-[1.1] text-[#F9F8F6] md:text-5xl lg:text-6xl">
-                                    Ready to preserve your
-                                    <br />
-                                    <span className="text-[#D4AF37] italic">
-                                        academic legacy?
-                                    </span>
-                                </h2>
-                                <p className="mx-auto mt-5 max-w-xl font-sans text-base leading-relaxed text-[#EBE5DE]/80 lg:mx-0">
-                                    Request access to the ASC KnowledgeVault and
-                                    become part of a growing academic archive.
-                                </p>
-                                <div className="mt-8 flex flex-col justify-center gap-5 sm:flex-row lg:justify-start">
-                                    <Link
-                                        href="/register"
-                                        className="group relative inline-flex h-12 items-center justify-center overflow-hidden bg-[#F9F8F6] px-8 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
-                                    >
-                                        <span className="absolute inset-0 translate-x-[-100%] bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
-                                        <span className="relative z-10 font-sans text-xs font-medium tracking-[0.2em] text-[#1A1A1A] uppercase transition-colors duration-500 group-hover:text-white">
-                                            Request Access
-                                        </span>
-                                    </Link>
-                                    <Link
-                                        href="/contact"
-                                        className="flex h-12 items-center justify-center border border-[#F9F8F6] px-6 transition-all duration-500 hover:bg-[#F9F8F6]"
-                                    >
-                                        <span className="font-sans text-xs tracking-[0.2em] text-[#F9F8F6] uppercase transition-colors duration-500 hover:text-[#1A1A1A]">
-                                            Contact Team
-                                        </span>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section> */}
 
                 {/* Footer */}
                 <footer className="bg-[#F9F8F6] py-12">
