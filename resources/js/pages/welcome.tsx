@@ -189,13 +189,13 @@ const Welcome: React.FC = () => {
             id: 4,
             name: 'Elson Morales',
             role: 'Member',
-            image: '/images/team/rodelio.jpg',
+            image: '/images/Elson.jpg',
         },
         {
             id: 5,
-            name: 'Kay Bagwasan',
+            name: 'Franklie B. Tahuyan',
             role: 'Member',
-            image: '/images/team/maryjane.jpg',
+            image: '/images/Franklie.jpg',
         },
     ];
 
