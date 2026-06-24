@@ -16,25 +16,25 @@ class StudentMyManuscriptController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        
+
         $query = Document::where('user_id', $user->id)
             ->with(['collaborators', 'reviewer']);
-        
+
         // Apply status filter
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
-        
+
         // Apply search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('abstract', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('abstract', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
-        
+
         // Sorting
         $sort = $request->get('sort', 'latest');
         switch ($sort) {
@@ -56,9 +56,9 @@ class StudentMyManuscriptController extends Controller
             default:
                 $query->orderBy('created_at', 'desc');
         }
-        
+
         $documents = $query->paginate(12);
-        
+
         // Get statistics
         $stats = [
             'total' => Document::where('user_id', $user->id)->count(),
@@ -71,7 +71,7 @@ class StudentMyManuscriptController extends Controller
             'total_downloads' => Document::where('user_id', $user->id)->sum('downloads'),
             'total_citations' => Document::where('user_id', $user->id)->sum('citations'),
         ];
-        
+
         return Inertia::render('Student/MyManuscripts', [
             'documents' => $documents,
             'stats' => $stats,
@@ -82,7 +82,65 @@ class StudentMyManuscriptController extends Controller
             ],
         ]);
     }
-    
+
+    public function show($id)
+    {
+        $document = Document::where('user_id', Auth::id())
+            ->with(['collaborators', 'reviewer', 'user'])
+            ->findOrFail($id);
+
+        // Get review history if the relationship exists
+        $reviewHistory = [];
+
+        // Check if the reviews relationship exists
+        if (method_exists($document, 'reviews')) {
+            try {
+                $reviewHistory = $document->reviews()
+                    ->with('reviewer')
+                    ->latest()
+                    ->get()
+                    ->toArray();
+            } catch (\Exception $e) {
+                // If the relationship fails, just use empty array
+                $reviewHistory = [];
+            }
+        }
+
+        // If you have a reviewer_feedback field, you can include it
+        if ($document->reviewer_feedback) {
+            $reviewHistory[] = [
+                'id' => 0,
+                'reviewer_id' => $document->reviewer_id,
+                'document_id' => $document->id,
+                'rating' => null,
+                'feedback' => $document->reviewer_feedback,
+                'status' => $document->status,
+                'created_at' => $document->reviewed_at ?? $document->updated_at,
+                'reviewer' => $document->reviewer ? [
+                    'id' => $document->reviewer->id,
+                    'name' => $document->reviewer->name,
+                    'email' => $document->reviewer->email,
+                ] : null,
+            ];
+        }
+
+        // Get submission statistics
+        $stats = [
+            'views' => $document->views ?? 0,
+            'downloads' => $document->downloads ?? 0,
+            'citations' => $document->citations ?? 0,
+            'submitted_at' => $document->submitted_at,
+            'reviewed_at' => $document->reviewed_at,
+        ];
+
+        return Inertia::render('Student/MyManuscriptDetail', [
+            'document' => $document,
+            'reviewHistory' => $reviewHistory,
+            'stats' => $stats,
+        ]);
+    }
+
+
     /**
      * Show the form for editing the specified manuscript.
      */
@@ -90,12 +148,12 @@ class StudentMyManuscriptController extends Controller
     {
         $document = Document::where('user_id', Auth::id())
             ->findOrFail($id);
-        
+
         return Inertia::render('Student/EditManuscript', [
             'document' => $document,
         ]);
     }
-    
+
     /**
      * Update the specified manuscript.
      */
@@ -103,24 +161,24 @@ class StudentMyManuscriptController extends Controller
     {
         $document = Document::where('user_id', Auth::id())
             ->findOrFail($id);
-        
+
         $request->validate([
             'title' => 'required|string|max:255',
             'abstract' => 'nullable|string|max:5000',
             'description' => 'nullable|string',
             'keywords' => 'nullable|array',
         ]);
-        
+
         $document->update([
             'title' => $request->title,
             'abstract' => $request->abstract,
             'description' => $request->description,
             'keywords' => $request->keywords,
         ]);
-        
+
         return redirect()->back()->with('success', 'Manuscript updated successfully!');
     }
-    
+
     /**
      * Submit manuscript for review.
      */
@@ -128,19 +186,19 @@ class StudentMyManuscriptController extends Controller
     {
         $document = Document::where('user_id', Auth::id())
             ->findOrFail($id);
-        
+
         if ($document->status !== 'draft') {
             return redirect()->back()->with('error', 'Only draft manuscripts can be submitted for review.');
         }
-        
+
         $document->update([
             'status' => 'pending_review',
             'submitted_at' => now(),
         ]);
-        
+
         return redirect()->back()->with('success', 'Manuscript submitted for review successfully!');
     }
-    
+
     /**
      * Delete the specified manuscript.
      */
@@ -148,18 +206,18 @@ class StudentMyManuscriptController extends Controller
     {
         $document = Document::where('user_id', Auth::id())
             ->findOrFail($id);
-        
+
         // Delete file from storage
         if ($document->file_path && \Storage::disk('public')->exists($document->file_path)) {
             \Storage::disk('public')->delete($document->file_path);
         }
-        
+
         $document->delete();
-        
+
         return redirect()->route('student.my-manuscripts')
             ->with('success', 'Manuscript deleted successfully!');
     }
-    
+
     /**
      * Get manuscript analytics.
      */
@@ -168,7 +226,7 @@ class StudentMyManuscriptController extends Controller
         $document = Document::where('user_id', Auth::id())
             ->with(['collaborators', 'reviewer'])
             ->findOrFail($id);
-        
+
         // Get weekly views data
         $weeklyViews = [
             'Mon' => rand(10, 100),
@@ -179,7 +237,7 @@ class StudentMyManuscriptController extends Controller
             'Sat' => rand(5, 50),
             'Sun' => rand(5, 50),
         ];
-        
+
         return Inertia::render('Student/ManuscriptAnalytics', [
             'document' => $document,
             'weeklyViews' => $weeklyViews,

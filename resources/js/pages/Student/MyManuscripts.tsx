@@ -84,19 +84,50 @@ interface MyManuscriptsProps {
     };
 }
 
-const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters: initialFilters }) => {
+const MyManuscripts: React.FC<MyManuscriptsProps> = ({
+    documents,
+    stats,
+    filters: initialFilters,
+}) => {
     const [searchTerm, setSearchTerm] = useState(initialFilters.search || '');
-    const [statusFilter, setStatusFilter] = useState(initialFilters.status || 'all');
+    const [statusFilter, setStatusFilter] = useState(
+        initialFilters.status || 'all',
+    );
     const [sortBy, setSortBy] = useState(initialFilters.sort || 'latest');
     const [showFilters, setShowFilters] = useState(false);
     const [actionMenu, setActionMenu] = useState<number | null>(null);
 
     const statCards = [
-        { label: 'Total', value: stats.total, icon: FileText, color: '#1A1A1A' },
-        { label: 'Draft', value: stats.draft, icon: BookOpen, color: '#6C6863' },
-        { label: 'Pending', value: stats.pending_review, icon: Clock, color: '#E67E22' },
-        { label: 'Approved', value: stats.approved, icon: CheckCircle, color: '#10B981' },
-        { label: 'Rejected', value: stats.rejected, icon: XCircle, color: '#EF4444' },
+        {
+            label: 'Total',
+            value: stats.total,
+            icon: FileText,
+            color: '#1A1A1A',
+        },
+        {
+            label: 'Draft',
+            value: stats.draft,
+            icon: BookOpen,
+            color: '#6C6863',
+        },
+        {
+            label: 'Pending',
+            value: stats.pending_review,
+            icon: Clock,
+            color: '#E67E22',
+        },
+        {
+            label: 'Approved',
+            value: stats.approved,
+            icon: CheckCircle,
+            color: '#10B981',
+        },
+        {
+            label: 'Rejected',
+            value: stats.rejected,
+            icon: XCircle,
+            color: '#EF4444',
+        },
     ];
 
     const getStatusBadge = (status: string) => {
@@ -143,14 +174,18 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
     };
 
     const applyFilters = () => {
-        router.get('/student/my-manuscripts', {
-            search: searchTerm,
-            status: statusFilter,
-            sort: sortBy,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        router.get(
+            '/student/my-manuscripts',
+            {
+                search: searchTerm,
+                status: statusFilter,
+                sort: sortBy,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
     };
 
     const resetFilters = () => {
@@ -162,20 +197,28 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
 
     const handleSubmitForReview = (id: number, title: string) => {
         if (confirm(`Submit "${title}" for review?`)) {
-            router.post(`/student/my-manuscripts/${id}/submit`, {}, {
-                onSuccess: () => {
-                    toast.success('Manuscript submitted for review');
-                    setActionMenu(null);
+            router.post(
+                `/student/my-manuscripts/${id}/submit`,
+                {},
+                {
+                    onSuccess: () => {
+                        toast.success('Manuscript submitted for review');
+                        setActionMenu(null);
+                    },
+                    onError: () => {
+                        toast.error('Failed to submit manuscript');
+                    },
                 },
-                onError: () => {
-                    toast.error('Failed to submit manuscript');
-                },
-            });
+            );
         }
     };
 
     const handleDelete = (id: number, title: string) => {
-        if (confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+        if (
+            confirm(
+                `Are you sure you want to delete "${title}"? This action cannot be undone.`,
+            )
+        ) {
             router.delete(`/student/my-manuscripts/${id}`, {
                 onSuccess: () => {
                     toast.success('Manuscript deleted');
@@ -205,7 +248,8 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                         My Manuscripts
                     </h1>
                     <p className="font-sans text-base text-[#6C6863]">
-                        Manage and track all your capstone manuscripts and research documents.
+                        Manage and track all your capstone manuscripts and
+                        research documents.
                     </p>
                 </div>
 
@@ -238,27 +282,34 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                 </div>
 
                 {/* Filters Bar */}
-                <div className="mb-6 flex flex-wrap items-center gap-4">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
+                {/* <div className="mb-6 flex flex-wrap items-center gap-4">
+                    <div className="relative max-w-md flex-1">
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                         <Input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && applyFilters()}
+                            onKeyPress={(e) =>
+                                e.key === 'Enter' && applyFilters()
+                            }
                             placeholder="Search by title..."
                             className="pl-9"
                         />
                     </div>
 
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={setStatusFilter}
+                    >
                         <SelectTrigger className="w-32">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Status</SelectItem>
                             <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="pending_review">Pending Review</SelectItem>
+                            <SelectItem value="pending_review">
+                                Pending Review
+                            </SelectItem>
                             <SelectItem value="approved">Approved</SelectItem>
                             <SelectItem value="rejected">Rejected</SelectItem>
                         </SelectContent>
@@ -272,20 +323,27 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                             <SelectItem value="latest">Latest First</SelectItem>
                             <SelectItem value="oldest">Oldest First</SelectItem>
                             <SelectItem value="title_asc">Title A-Z</SelectItem>
-                            <SelectItem value="title_desc">Title Z-A</SelectItem>
+                            <SelectItem value="title_desc">
+                                Title Z-A
+                            </SelectItem>
                             <SelectItem value="views">Most Viewed</SelectItem>
-                            <SelectItem value="downloads">Most Downloaded</SelectItem>
+                            <SelectItem value="downloads">
+                                Most Downloaded
+                            </SelectItem>
                         </SelectContent>
                     </Select>
 
-                    <Button onClick={applyFilters} className="bg-[#1A1A1A] hover:bg-[#D4AF37]">
+                    <Button
+                        onClick={applyFilters}
+                        className="bg-[#1A1A1A] hover:bg-[#D4AF37]"
+                    >
                         Apply
                     </Button>
 
                     <Button variant="outline" onClick={resetFilters}>
                         Reset
                     </Button>
-                </div>
+                </div> */}
 
                 {/* Documents Grid */}
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -303,15 +361,15 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                                     {getStatusLabel(doc.status)}
                                 </span>
                             </div>
-                            
-                            <h3 className="font-playfair mb-2 text-lg text-[#1A1A1A] line-clamp-2">
+
+                            <h3 className="font-playfair mb-2 line-clamp-2 text-lg text-[#1A1A1A]">
                                 {doc.title}
                             </h3>
-                            
-                            <p className="mb-3 font-sans text-xs text-[#6C6863] line-clamp-2">
+
+                            <p className="mb-3 line-clamp-2 font-sans text-xs text-[#6C6863]">
                                 {doc.abstract || 'No abstract provided'}
                             </p>
-                            
+
                             <div className="mb-4 flex gap-3 text-xs text-[#6C6863]">
                                 <span className="flex items-center gap-1">
                                     <Eye className="h-3 w-3" />
@@ -321,16 +379,12 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                                     <Download className="h-3 w-3" />
                                     {doc.downloads} downloads
                                 </span>
-                                <span className="flex items-center gap-1">
-                                    <TrendingUp className="h-3 w-3" />
-                                    {doc.citations} citations
-                                </span>
                             </div>
-                            
+
                             <div className="flex items-center justify-between">
                                 <div className="flex gap-2">
                                     <Link
-                                        href={`/documents/${doc.id}`}
+                                        href={`/student/my-manuscripts/${doc.id}`}
                                         className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
                                         title="View"
                                     >
@@ -350,22 +404,49 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                                     >
                                         <BarChart3 className="h-4 w-4" />
                                     </Link>
+
+                                    {/* Submit as Final Paper Button */}
+                                    {doc.status === 'approved' && (
+                                        <button
+                                            // onClick={() =>
+                                            //     handleSubmitFinalPaper(
+                                            //         doc.id,
+                                            //         doc.title,
+                                            //     )
+                                            // }
+                                            className="p-1.5 text-green-600 transition-colors hover:text-[#D4AF37]"
+                                            title="Submit as Final Paper"
+                                        >
+                                            <Send className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
-                                
+
                                 <div className="relative">
                                     <button
-                                        onClick={() => setActionMenu(actionMenu === doc.id ? null : doc.id)}
+                                        onClick={() =>
+                                            setActionMenu(
+                                                actionMenu === doc.id
+                                                    ? null
+                                                    : doc.id,
+                                            )
+                                        }
                                         className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
                                     >
                                         <MoreVertical className="h-4 w-4" />
                                     </button>
-                                    
+
                                     {actionMenu === doc.id && (
-                                        <div className="absolute right-0 top-full z-10 mt-1 min-w-40 border border-[#1A1A1A]/10 bg-white shadow-lg">
+                                        <div className="absolute top-full right-0 z-10 mt-1 min-w-40 border border-[#1A1A1A]/10 bg-white shadow-lg">
                                             <div className="p-1">
                                                 {doc.status === 'draft' && (
                                                     <button
-                                                        onClick={() => handleSubmitForReview(doc.id, doc.title)}
+                                                        onClick={() =>
+                                                            handleSubmitForReview(
+                                                                doc.id,
+                                                                doc.title,
+                                                            )
+                                                        }
                                                         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#1A1A1A] transition-colors hover:bg-[#F9F8F6]"
                                                     >
                                                         <Send className="h-3 w-3" />
@@ -380,7 +461,12 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                                                     Edit Details
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(doc.id, doc.title)}
+                                                    onClick={() =>
+                                                        handleDelete(
+                                                            doc.id,
+                                                            doc.title,
+                                                        )
+                                                    }
                                                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
                                                 >
                                                     <Trash2 className="h-3 w-3" />
@@ -398,7 +484,9 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                 {documents.data.length === 0 && (
                     <div className="py-12 text-center">
                         <FileText className="mx-auto h-12 w-12 text-[#6C6863]/30" />
-                        <p className="mt-3 font-sans text-[#6C6863]">No manuscripts found</p>
+                        <p className="mt-3 font-sans text-[#6C6863]">
+                            No manuscripts found
+                        </p>
                         <Link
                             href="/student/documents/upload"
                             className="mt-3 inline-flex items-center gap-2 text-sm text-[#D4AF37] hover:text-[#1A1A1A]"
@@ -412,7 +500,8 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                 {documents.last_page > 1 && (
                     <div className="mt-8 flex items-center justify-between">
                         <p className="font-sans text-sm text-[#6C6863]">
-                            Showing {documents.data.length} of {documents.total} manuscripts
+                            Showing {documents.data.length} of {documents.total}{' '}
+                            manuscripts
                         </p>
                         <div className="flex gap-2">
                             <Button
@@ -431,7 +520,8 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                                 <ChevronLeft className="h-4 w-4" />
                             </Button>
                             <span className="flex h-8 items-center justify-center px-3 font-sans text-sm text-[#1A1A1A]">
-                                Page {documents.current_page} of {documents.last_page}
+                                Page {documents.current_page} of{' '}
+                                {documents.last_page}
                             </span>
                             <Button
                                 variant="outline"
@@ -444,7 +534,10 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({ documents, stats, filters
                                         sort: sortBy,
                                     })
                                 }
-                                disabled={documents.current_page === documents.last_page}
+                                disabled={
+                                    documents.current_page ===
+                                    documents.last_page
+                                }
                             >
                                 <ChevronRight className="h-4 w-4" />
                             </Button>

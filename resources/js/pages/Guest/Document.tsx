@@ -115,7 +115,7 @@ const GuestDocument: React.FC = () => {
         {
             id: 1,
             title: 'AI-Powered Learning Management System for Higher Education',
-            authors: ['Dr. Maria Santos', 'Prof. John Cruz'],
+            authors: ['Maria Santos', 'John Cruz'],
             abstract:
                 'This study explores the implementation of artificial intelligence in learning management systems to personalize student learning experiences.',
             type: 'Capstone Project',
@@ -128,7 +128,7 @@ const GuestDocument: React.FC = () => {
         {
             id: 2,
             title: 'Blockchain Technology for Secure Academic Credentials',
-            authors: ['Prof. Anna Reyes', 'Dr. James Wilson'],
+            authors: ['Anna Reyes', 'James Wilson'],
             abstract:
                 'A comprehensive analysis of blockchain implementation for tamper-proof academic credential verification and storage.',
             type: 'Research Paper',
@@ -141,7 +141,7 @@ const GuestDocument: React.FC = () => {
         {
             id: 3,
             title: 'Sustainable Architecture: Green Building Design Principles',
-            authors: ['Arch. Michael Tan', 'Dr. Lisa Garcia'],
+            authors: ['Arch. Michael Tan', 'Lisa Garcia'],
             abstract:
                 'An examination of sustainable design principles and their application in modern architecture for energy efficiency.',
             type: 'Thesis',
@@ -154,7 +154,7 @@ const GuestDocument: React.FC = () => {
         {
             id: 4,
             title: 'Data Analytics for Business Intelligence',
-            authors: ['Prof. Robert Chen', 'Dr. Patricia Lim'],
+            authors: ['Robert Chen', 'Patricia Lim'],
             abstract:
                 'This research presents data analytics frameworks for enhancing business intelligence and decision-making processes.',
             type: 'Research Paper',

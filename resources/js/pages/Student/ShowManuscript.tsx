@@ -1,9 +1,8 @@
-// resources/js/Pages/Documents/ShowManuscript.tsx
+// resources/js/Pages/Student/ShowManuscript.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import toast from 'react-hot-toast';
-import { Document as PDFDocument, Page as PDFPage, pdfjs } from 'react-pdf';
 import {
     FileText,
     Download,
@@ -31,15 +30,13 @@ import {
     ZoomIn,
     ZoomOut,
     RotateCw,
+    X,
 } from 'lucide-react';
 import AppLayout from '@/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InviteCollaboratorsModal from '@/components/ui/InviteCollaboratorsModal,';
-
-// Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 interface ShowManuscriptProps {
     document: {
@@ -123,21 +120,18 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
     const [submittingReview, setSubmittingReview] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [previewLoading, setPreviewLoading] = useState(false);
 
-    // PDF pagination states
-    const [numPages, setNumPages] = useState<number | null>(null);
-    const [pageNumber, setPageNumber] = useState(1);
-    const [scale, setScale] = useState(1.0);
-    const [rotation, setRotation] = useState(0);
-    const [pdfFile, setPdfFile] = useState<string | null>(null);
-    const [pdfLoading, setPdfLoading] = useState(false);
-    const [pdfError, setPdfError] = useState<string | null>(null);
-
-    const isPdf = document.mime_type === 'application/pdf';
+    const isPdf =
+        document.mime_type === 'application/pdf' ||
+        document.file_name?.toLowerCase().endsWith('.pdf');
     const isDocx =
         document.mime_type ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    const isDoc = document.mime_type === 'application/msword';
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        document.file_name?.toLowerCase().endsWith('.docx');
+    const isDoc =
+        document.mime_type === 'application/msword' ||
+        document.file_name?.toLowerCase().endsWith('.doc');
     const isPreviewable = isPdf || isDocx || isDoc;
 
     const getFileIcon = () => {
@@ -198,7 +192,6 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
         return <File className="h-12 w-12 text-[#6C6863]" />;
     };
 
-    // Update the getFileTypeDisplay function
     const getFileTypeDisplay = () => {
         const mimeType = document.mime_type;
         const fileName = document.file_name.toLowerCase();
@@ -223,12 +216,10 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
             return 'Text File';
         }
 
-        // Get extension from filename
         const extension = fileName.split('.').pop()?.toUpperCase();
         return extension ? `${extension} File` : 'Unknown File Type';
     };
 
-    // Set isClient to true when component mounts (client-side only)
     useEffect(() => {
         setIsClient(true);
     }, []);
@@ -259,34 +250,24 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
         }
     }, [isClient]);
 
-    const handlePreview = async () => {
+    const handlePreviewFile = () => {
         if (!isPreviewable) {
             toast.error('Preview not available for this file type');
             return;
         }
 
+        setPreviewLoading(true);
         setShowPreview(true);
 
-        if (isPdf) {
-            const fileUrl = `/storage/${document.file_path}`;
-            setPdfFile(fileUrl);
-            setPdfLoading(true);
-            setPdfError(null);
-            setPageNumber(1);
-            setNumPages(null);
-        } else if (isDocx || isDoc) {
-            // For DOCX/DOC, use Google Docs Viewer
-            const fileUrl = `/storage/${document.file_path}`;
-            const googleViewerUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(window.location.origin + fileUrl)}`;
-            window.open(googleViewerUrl, '_blank');
-            toast.info('Opening document in new tab...');
-            setShowPreview(false);
-        }
+        // Simulate loading
+        setTimeout(() => {
+            setPreviewLoading(false);
+        }, 500);
     };
 
     const handleDownload = () => {
         router.get(
-            `/student/documents/${document.id}/download`,
+            `/documents/${document.id}/download`,
             {},
             {
                 onSuccess: () => {
@@ -336,42 +317,6 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
         }
     };
 
-    const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-        setNumPages(numPages);
-        setPdfLoading(false);
-        toast.success(`Loaded ${numPages} pages`);
-    };
-
-    const onDocumentLoadError = (error: Error) => {
-        console.error('PDF load error:', error);
-        setPdfError('Failed to load PDF. Please try downloading the file.');
-        setPdfLoading(false);
-    };
-
-    const goToPreviousPage = () => {
-        if (pageNumber > 1) {
-            setPageNumber(pageNumber - 1);
-        }
-    };
-
-    const goToNextPage = () => {
-        if (numPages && pageNumber < numPages) {
-            setPageNumber(pageNumber + 1);
-        }
-    };
-
-    const zoomIn = () => {
-        setScale((prev) => Math.min(prev + 0.25, 3.0));
-    };
-
-    const zoomOut = () => {
-        setScale((prev) => Math.max(prev - 0.25, 0.5));
-    };
-
-    const rotate = () => {
-        setRotation((prev) => (prev + 90) % 360);
-    };
-
     const getStatusIcon = () => {
         switch (document.status) {
             case 'approved':
@@ -419,11 +364,14 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
         );
     }
 
+    // Get the full PDF URL
+    const pdfUrl = `/storage/${document.file_path}`;
+
     return (
         <AppLayout>
             <Head title={`${document.title} - ASC KnowledgeVault`} />
 
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-7xl">
                 {/* Document Header */}
                 <div className="mb-8">
                     <div className="mb-4 flex items-center justify-between">
@@ -492,7 +440,7 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                         {isPreviewable && (
                             <Button
                                 variant="outline"
-                                onClick={handlePreview}
+                                onClick={handlePreviewFile}
                                 className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
                             >
                                 <Eye className="mr-2 h-4 w-4" />
@@ -525,7 +473,7 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                     </div>
                 </div>
 
-                {/* PDF Reader Modal with Pagination */}
+                {/* PDF Viewer Modal - Using iframe (simpler and more reliable) */}
                 {showPreview && isPdf && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
                         <div
@@ -546,32 +494,6 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {/* Zoom controls */}
-                                    <button
-                                        onClick={zoomOut}
-                                        className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
-                                        title="Zoom Out"
-                                    >
-                                        <ZoomOut className="h-4 w-4" />
-                                    </button>
-                                    <span className="text-xs text-[#6C6863]">
-                                        {Math.round(scale * 100)}%
-                                    </span>
-                                    <button
-                                        onClick={zoomIn}
-                                        className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
-                                        title="Zoom In"
-                                    >
-                                        <ZoomIn className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        onClick={rotate}
-                                        className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
-                                        title="Rotate"
-                                    >
-                                        <RotateCw className="h-4 w-4" />
-                                    </button>
-                                    <div className="mx-1 h-6 w-px bg-[#1A1A1A]/10" />
                                     <button
                                         onClick={toggleFullscreen}
                                         className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
@@ -591,14 +513,14 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                         onClick={() => setShowPreview(false)}
                                         className="p-1.5 text-[#6C6863] transition-colors hover:text-red-500"
                                     >
-                                        ✕
+                                        <X className="h-5 w-5" />
                                     </button>
                                 </div>
                             </div>
 
-                            {/* PDF Viewer */}
-                            <div className="flex h-[calc(100%-60px)] flex-col items-center overflow-auto bg-gray-100 p-4">
-                                {pdfLoading && (
+                            {/* PDF Viewer - Using iframe */}
+                            <div className="h-[calc(100%-60px)] w-full">
+                                {previewLoading ? (
                                     <div className="flex h-full items-center justify-center">
                                         <div className="text-center">
                                             <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
@@ -607,81 +529,12 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                             </p>
                                         </div>
                                     </div>
-                                )}
-
-                                {pdfError && (
-                                    <div className="flex h-full items-center justify-center">
-                                        <div className="max-w-md text-center">
-                                            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-                                            <p className="font-sans text-sm text-red-600">
-                                                {pdfError}
-                                            </p>
-                                            <Button
-                                                onClick={handleDownload}
-                                                className="mt-4"
-                                            >
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Download PDF Instead
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {pdfFile && !pdfError && (
-                                    <>
-                                        <PDFDocument
-                                            file={pdfFile}
-                                            onLoadSuccess={
-                                                onDocumentLoadSuccess
-                                            }
-                                            onLoadError={onDocumentLoadError}
-                                            loading={
-                                                <div className="flex items-center justify-center py-20">
-                                                    <div className="text-center">
-                                                        <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#D4AF37] border-t-transparent" />
-                                                        <p className="font-sans text-sm text-[#6C6863]">
-                                                            Loading pages...
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            }
-                                        >
-                                            <PDFPage
-                                                pageNumber={pageNumber}
-                                                scale={scale}
-                                                rotate={rotation}
-                                                renderTextLayer={false}
-                                                renderAnnotationLayer={false}
-                                                className="shadow-lg"
-                                            />
-                                        </PDFDocument>
-
-                                        {/* Pagination Controls */}
-                                        {numPages && numPages > 1 && (
-                                            <div className="mt-4 flex items-center gap-4 border border-[#1A1A1A]/10 bg-white p-3">
-                                                <button
-                                                    onClick={goToPreviousPage}
-                                                    disabled={pageNumber <= 1}
-                                                    className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    <ChevronLeft className="h-5 w-5" />
-                                                </button>
-                                                <span className="font-sans text-sm text-[#1A1A1A]">
-                                                    Page {pageNumber} of{' '}
-                                                    {numPages}
-                                                </span>
-                                                <button
-                                                    onClick={goToNextPage}
-                                                    disabled={
-                                                        pageNumber >= numPages
-                                                    }
-                                                    className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    <ChevronRight className="h-5 w-5" />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </>
+                                ) : (
+                                    <iframe
+                                        src={`${pdfUrl}#toolbar=1&navpanes=1`}
+                                        className="h-full w-full"
+                                        title={`${document.title} - PDF Preview`}
+                                    />
                                 )}
                             </div>
                         </div>
@@ -812,7 +665,7 @@ const ShowManuscript: React.FC<ShowManuscriptProps> = ({
                                 </div>
                                 <Button
                                     variant="outline"
-                                    onClick={handlePreview}
+                                    onClick={handlePreviewFile}
                                     className="shrink-0"
                                 >
                                     <Eye className="mr-2 h-4 w-4" />

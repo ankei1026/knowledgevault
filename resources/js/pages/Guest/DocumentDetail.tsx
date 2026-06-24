@@ -22,7 +22,7 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({ documentId }) => {
     const document = {
         id: documentId,
         title: 'AI-Powered Learning Management System for Higher Education',
-        authors: ['Dr. Maria Santos', 'Prof. John Cruz'],
+        authors: ['Maria Santos', 'John Cruz'],
         abstract:
             'This study explores the implementation of artificial intelligence in learning management systems to personalize student learning experiences. The research demonstrates significant improvements in student engagement and learning outcomes through adaptive learning pathways.',
         type: 'Capstone Project',

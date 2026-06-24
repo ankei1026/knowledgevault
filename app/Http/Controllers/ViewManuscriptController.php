@@ -12,6 +12,82 @@ use Inertia\Inertia;
 
 class ViewManuscriptController extends Controller
 {
+    public function index(Request $request)
+    {
+        $query = Document::query()
+            ->where('status', 'published') // Only show published documents
+            ->orWhere('status', 'approved');
+
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'LIKE', "%{$search}%")
+                    ->orWhere('abstract', 'LIKE', "%{$search}%")
+                    ->orWhere('description', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Apply type filter
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Apply year filter
+        if ($request->filled('year')) {
+            $query->whereYear('created_at', $request->year);
+        }
+
+        // Apply sorting
+        $sort = $request->get('sort', 'latest');
+        switch ($sort) {
+            case 'latest':
+                $query->latest();
+                break;
+            case 'oldest':
+                $query->oldest();
+                break;
+            case 'views':
+                $query->orderBy('views', 'desc');
+                break;
+            case 'downloads':
+                $query->orderBy('downloads', 'desc');
+                break;
+            default:
+                $query->latest();
+        }
+
+        $documents = $query->paginate(12)->withQueryString();
+
+        // Get statistics
+        $stats = [
+            'total' => Document::count(),
+            'published' => Document::where('status', 'published')->count(),
+            'pending' => Document::where('status', 'pending_review')->count(),
+            'views' => Document::sum('views'),
+            'downloads' => Document::sum('downloads'),
+        ];
+
+        // Get unique types and years for filters
+        $years = Document::selectRaw('DISTINCT YEAR(created_at) as year')
+            ->pluck('year')
+            ->filter()
+            ->values();
+
+        return Inertia::render('Guest/Document', [
+            'documents' => $documents,
+            'stats' => $stats,
+            'filters' => [
+                'search' => $request->get('search', ''),
+                'type' => $request->get('type', 'all'),
+                'year' => $request->get('year', 'all'),
+                'sort' => $request->get('sort', 'latest'),
+            ],
+
+            'years' => $years,
+        ]);
+    }
+
     /**
      * Show the manuscript view page
      */

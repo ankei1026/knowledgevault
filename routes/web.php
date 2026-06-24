@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminUserManagementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FacultyDashboardController;
 use App\Http\Controllers\FacultyReviewController;
+use App\Http\Controllers\FacultyStudentsController;
 use App\Http\Controllers\GuestViewDocumentController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\StudentDashboardController;
@@ -19,10 +20,12 @@ use Inertia\Inertia;
 
 Route::inertia('/', 'welcome')->name('home');
 
-Route::get('/documents', [GuestViewDocumentController::class, 'index'])
+// Guest document viewing
+Route::get('/guest/documents', [GuestViewDocumentController::class, 'index'])
     ->name('guest.documents');
+Route::get('/guest/documents/{id}', [GuestViewDocumentController::class, 'show'])
+    ->name('documents.show');
 
-// Add individual document view route (optional)
 Route::get('/documents/{id}', function ($id) {
     return Inertia::render('Guest/DocumentDetail', ['documentId' => $id]);
 })->name('guest.document.show');
@@ -35,6 +38,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 });
 
+// Invitation routes (public)
 Route::get('/invitations/accept/{token}', [InvitationController::class, 'accept'])->name('invitations.accept');
 Route::get('/invitations/decline/{token}', [InvitationController::class, 'decline'])->name('invitations.decline');
 
@@ -43,7 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
-// Admin routes (requires auth and admin role)
+// ==================== ADMIN ROUTES ====================
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/documents', [AdminDashboardController::class, 'documents'])->name('documents');
@@ -60,14 +64,26 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/users/export', [AdminUserManagementController::class, 'export'])->name('users.export');
 });
 
+// ==================== STUDENT ROUTES ====================
 Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
 
-    Route::post('/documents/{documentId}/assign-reviewer', [StudentFacultyReviewerController::class, 'assignReviewer'])->name('documents.assign-reviewer');
-
+    // Upload routes
     Route::get('/documents/upload', [StudentUploadManuscriptController::class, 'create'])->name('documents.upload');
     Route::post('/documents', [StudentUploadManuscriptController::class, 'store'])->name('documents.store');
     Route::post('/documents/{id}/submit', [StudentUploadManuscriptController::class, 'submitForReview'])->name('documents.submit');
+
+    // My Manuscripts Routes
+    Route::get('/my-manuscripts', [StudentMyManuscriptController::class, 'index'])->name('my-manuscripts');
+    Route::get('/my-manuscripts/{id}/edit', [StudentMyManuscriptController::class, 'edit'])->name('my-manuscripts.edit');
+    Route::get('/my-manuscripts/{id}', [StudentMyManuscriptController::class, 'show'])->name('my-manuscripts.show');
+    Route::put('/my-manuscripts/{id}', [StudentMyManuscriptController::class, 'update'])->name('my-manuscripts.update');
+    Route::post('/my-manuscripts/{id}/submit', [StudentMyManuscriptController::class, 'submitForReview'])->name('my-manuscripts.submit');
+    Route::delete('/my-manuscripts/{id}', [StudentMyManuscriptController::class, 'destroy'])->name('my-manuscripts.destroy');
+    Route::get('/my-manuscripts/{id}/analytics', [StudentMyManuscriptController::class, 'analytics'])->name('my-manuscripts.analytics');
+
+    // Faculty reviewer assignment
+    Route::post('/documents/{documentId}/assign-reviewer', [StudentFacultyReviewerController::class, 'assignReviewer'])->name('documents.assign-reviewer');
 
     // Document invitations
     Route::get('/documents/{document}/invitations', [StudentInvitationController::class, 'index'])->name('documents.invitations');
@@ -75,37 +91,28 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
     Route::post('/invitations/{invitation}/resend', [StudentInvitationController::class, 'resend'])->name('invitations.resend');
     Route::delete('/invitations/{invitation}', [StudentInvitationController::class, 'cancel'])->name('invitations.cancel');
     Route::delete('/documents/{document}/collaborators/{user}', [StudentInvitationController::class, 'removeCollaborator'])->name('documents.remove-collaborator');
-
-    Route::get('/documents/{id}', [ViewManuscriptController::class, 'show'])->name('documents.show');
-    Route::get('/documents/{id}/download', [ViewManuscriptController::class, 'download'])->name('documents.download');
-    Route::post('/documents/{id}/review', [ViewManuscriptController::class, 'submitReview'])->name('documents.review');
-
-    // My Manuscripts Routes
-    Route::get('/my-manuscripts', [StudentMyManuscriptController::class, 'index'])->name('my-manuscripts');
-    Route::get('/my-manuscripts/{id}/edit', [StudentMyManuscriptController::class, 'edit'])->name('my-manuscripts.edit');
-    Route::put('/my-manuscripts/{id}', [StudentMyManuscriptController::class, 'update'])->name('my-manuscripts.update');
-    Route::post('/my-manuscripts/{id}/submit', [StudentMyManuscriptController::class, 'submitForReview'])->name('my-manuscripts.submit');
-    Route::delete('/my-manuscripts/{id}', [StudentMyManuscriptController::class, 'destroy'])->name('my-manuscripts.destroy');
-    Route::get('/my-manuscripts/{id}/analytics', [StudentMyManuscriptController::class, 'analytics'])->name('my-manuscripts.analytics');
 });
 
-// Faculty routes
+// ==================== FACULTY ROUTES ====================
 Route::middleware(['auth', 'role:faculty'])->prefix('faculty')->name('faculty.')->group(function () {
     // Dashboard
     Route::get('/dashboard', [FacultyDashboardController::class, 'index'])->name('dashboard');
 
-    // Submissions management
-    Route::get('/pending-submissions', [FacultyDashboardController::class, 'pendingSubmissions'])->name('pending-submissions');
-    Route::get('/review-history', [FacultyDashboardController::class, 'reviewHistory'])->name('review-history');
-
-    // Review actions
-    Route::get('/review/{id}', [FacultyDashboardController::class, 'showReviewForm'])->name('review.show');
-    Route::post('/review/{id}', [FacultyDashboardController::class, 'submitReview'])->name('review.submit');
-
+    // Submissions management (using FacultyReviewController)
     Route::get('/pending-submissions', [FacultyReviewController::class, 'pendingSubmissions'])->name('pending-submissions');
     Route::get('/review-history', [FacultyReviewController::class, 'reviewHistory'])->name('review-history');
 
-    // Review actions
+    // Review actions (using FacultyReviewController)
     Route::get('/review/{id}', [FacultyReviewController::class, 'show'])->name('review.show');
     Route::post('/review/{id}', [FacultyReviewController::class, 'submitReview'])->name('review.submit');
+
+    Route::get('/students', [FacultyStudentsController::class, 'index'])->name('students');
+});
+
+// ==================== NOTIFICATION ROUTES ====================
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread', [App\Http\Controllers\NotificationController::class, 'getUnread'])->name('notifications.unread');
+    Route::post('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
 });

@@ -116,9 +116,9 @@ const Welcome: React.FC = () => {
     ];
 
     const stats = [
-        { value: '500+', label: 'Documents Archived', icon: Database },
-        { value: '50+', label: 'Active Researchers', icon: Users },
-        { value: '15+', label: 'Capstone Projects', icon: Award },
+        { value: '0+', label: 'Documents Archived', icon: Database },
+        { value: '0+', label: 'Active Researchers', icon: Users },
+        { value: '0+', label: 'Capstone Projects', icon: Award },
         { value: '98%', label: 'System Uptime', icon: Clock },
     ];
 
@@ -188,7 +188,7 @@ const Welcome: React.FC = () => {
                                 FAQ
                             </a>
                             <Link
-                                href="/documents"
+                                href="/guest/documents"
                                 className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
                             >
                                 Archive
@@ -521,13 +521,7 @@ const Welcome: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="h-1.5 w-1.5 bg-[#D4AF37]" />
                                         <span className="font-sans text-sm text-[#1A1A1A]">
-                                            Metadata Tagging
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-1.5 w-1.5 bg-[#D4AF37]" />
-                                        <span className="font-sans text-sm text-[#1A1A1A]">
-                                            Export & Citation
+                                            Export / Download
                                         </span>
                                     </div>
                                 </div>
@@ -599,7 +593,7 @@ const Welcome: React.FC = () => {
                 </section>
 
                 {/* FAQ Section */}
-                <section
+                {/* <section
                     id="faq"
                     className="border-b border-[#1A1A1A]/10 py-20 lg:py-28"
                 >
@@ -665,10 +659,10 @@ const Welcome: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </section>
+                </section> */}
 
                 {/* CTA Section */}
-                <section className="bg-[#1A1A1A] py-20 lg:py-28">
+                {/* <section className="bg-[#1A1A1A] py-20 lg:py-28">
                     <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
                         <div className="grid items-center gap-10 text-center lg:grid-cols-12 lg:text-left">
                             <div className="lg:col-span-8 lg:col-start-2">
@@ -711,7 +705,7 @@ const Welcome: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </section>
+                </section> */}
 
                 {/* Footer */}
                 <footer className="bg-[#F9F8F6] py-12">
