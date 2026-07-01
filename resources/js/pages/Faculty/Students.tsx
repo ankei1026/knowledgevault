@@ -10,30 +10,32 @@ import {
     Search,
     ChevronDown,
     ChevronRight,
-    Users as UsersIcon,
     UserPlus,
+    GraduationCap,
+    Calendar,
 } from 'lucide-react';
 import AppLayout from '@/layout/app-layout';
 import { Input } from '@/components/ui/input';
 
-interface CoAuthor {
+interface Author {
     name: string;
-    email: string;
+    email: string | null;
 }
 
 interface Manuscript {
     id: number;
     title: string;
     status: string;
+    authors?: Author[];
+    submitted_at?: string | null;
+    reviewed_at?: string | null;
 }
 
 interface Student {
     id: number;
     name: string;
     email: string;
-    program: string;
-    year_level: string;
-    co_authors: CoAuthor[];
+    co_authors: Author[];
     manuscripts: Manuscript[];
 }
 
@@ -42,6 +44,10 @@ interface FacultyStudentsProps {
     stats: {
         total_students: number;
         total_manuscripts: number;
+        total_co_authors: number;
+    };
+    filters: {
+        search: string;
     };
 }
 
@@ -58,6 +64,39 @@ const FacultyStudents: React.FC<FacultyStudentsProps> = ({
             student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             student.program.toLowerCase().includes(searchTerm.toLowerCase()),
     );
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return 'text-green-600 bg-green-50 border-green-200';
+            case 'pending_review':
+            case 'under_review':
+                return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+            case 'rejected':
+                return 'text-red-600 bg-red-50 border-red-200';
+            case 'published':
+                return 'text-blue-600 bg-blue-50 border-blue-200';
+            default:
+                return 'text-gray-600 bg-gray-50 border-gray-200';
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'pending_review':
+                return 'Pending Review';
+            case 'under_review':
+                return 'Under Review';
+            case 'approved':
+                return 'Approved';
+            case 'rejected':
+                return 'Rejected';
+            case 'published':
+                return 'Published';
+            default:
+                return 'Draft';
+        }
+    };
 
     return (
         <AppLayout>
@@ -76,7 +115,7 @@ const FacultyStudents: React.FC<FacultyStudentsProps> = ({
                         My Students
                     </h1>
                     <p className="font-sans text-base text-[#6C6863]">
-                        View your students and their groupmates with manuscript
+                        View your students and their co-authors with manuscript
                         titles.
                     </p>
                 </div>
@@ -96,6 +135,12 @@ const FacultyStudents: React.FC<FacultyStudentsProps> = ({
                                 {stats.total_manuscripts} Manuscripts
                             </span>
                         </div>
+                        <div className="flex items-center gap-2">
+                            <UserPlus className="h-4 w-4 text-[#D4AF37]" />
+                            <span className="font-sans text-sm text-[#1A1A1A]">
+                                {stats.total_co_authors} Co-authors
+                            </span>
+                        </div>
                     </div>
                     <div className="relative w-full max-w-xs">
                         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
@@ -109,7 +154,7 @@ const FacultyStudents: React.FC<FacultyStudentsProps> = ({
                     </div>
                 </div>
 
-                {/* Students Grid - Like Google Classroom */}
+                {/* Students Grid */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {filteredStudents.length === 0 ? (
                         <div className="col-span-full py-12 text-center">
@@ -170,13 +215,26 @@ const FacultyStudents: React.FC<FacultyStudentsProps> = ({
                                 {/* Expanded Content */}
                                 {expandedStudent === student.id && (
                                     <div className="border-t border-[#1A1A1A]/10 bg-[#F9F8F6] p-4">
-                                        {/* Co-authors / Groupmates */}
+                                        {/* Co-authors */}
                                         <div className="mb-4">
                                             <div className="mb-2 flex items-center gap-2">
-                                                <UsersIcon className="h-4 w-4 text-[#D4AF37]" />
+                                                <UserPlus className="h-4 w-4 text-[#D4AF37]" />
                                                 <span className="font-sans text-xs font-medium tracking-[0.2em] text-[#6C6863] uppercase">
-                                                    Groupmates
+                                                    Co-authors
                                                 </span>
+                                                {student.co_authors.length >
+                                                    0 && (
+                                                    <span className="ml-auto text-xs text-[#6C6863]">
+                                                        {
+                                                            student.co_authors
+                                                                .length
+                                                        }{' '}
+                                                        {student.co_authors
+                                                            .length === 1
+                                                            ? 'person'
+                                                            : 'people'}
+                                                    </span>
+                                                )}
                                             </div>
                                             {student.co_authors.length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
@@ -188,13 +246,22 @@ const FacultyStudents: React.FC<FacultyStudentsProps> = ({
                                                             >
                                                                 <User className="h-3 w-3 text-[#D4AF37]" />
                                                                 {author.name}
+                                                                {author.email && (
+                                                                    <span className="text-[10px] text-[#6C6863]">
+                                                                        (
+                                                                        {
+                                                                            author.email
+                                                                        }
+                                                                        )
+                                                                    </span>
+                                                                )}
                                                             </span>
                                                         ),
                                                     )}
                                                 </div>
                                             ) : (
-                                                <p className="text-xs text-[#6C6863]">
-                                                    No groupmates
+                                                <p className="text-xs text-[#6C6863] italic">
+                                                    No co-authors
                                                 </p>
                                             )}
                                         </div>
@@ -204,35 +271,86 @@ const FacultyStudents: React.FC<FacultyStudentsProps> = ({
                                             <div className="mb-2 flex items-center gap-2">
                                                 <BookOpen className="h-4 w-4 text-[#D4AF37]" />
                                                 <span className="font-sans text-xs font-medium tracking-[0.2em] text-[#6C6863] uppercase">
-                                                    Titles
+                                                    Manuscripts
+                                                </span>
+                                                <span className="ml-auto text-xs text-[#6C6863]">
+                                                    {student.manuscripts.length}{' '}
+                                                    total
                                                 </span>
                                             </div>
                                             {student.manuscripts.length > 0 ? (
-                                                <div className="space-y-1">
+                                                <div className="space-y-1.5">
                                                     {student.manuscripts.map(
                                                         (manuscript) => (
                                                             <div
                                                                 key={
                                                                     manuscript.id
                                                                 }
-                                                                className="flex items-center gap-2 rounded border border-[#1A1A1A]/10 bg-white px-3 py-1.5 text-sm"
+                                                                className="flex flex-col gap-1 rounded border border-[#1A1A1A]/10 bg-white p-3 text-sm"
                                                             >
-                                                                <span className="text-[#1A1A1A]">
-                                                                    {
-                                                                        manuscript.title
-                                                                    }
-                                                                </span>
-                                                                <span className="ml-auto text-xs text-[#6C6863]">
-                                                                    {
-                                                                        manuscript.status
-                                                                    }
-                                                                </span>
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="font-playfair text-[#1A1A1A]">
+                                                                        {
+                                                                            manuscript.title
+                                                                        }
+                                                                    </span>
+                                                                    <span
+                                                                        className={`rounded px-2 py-0.5 text-[10px] ${getStatusBadge(manuscript.status)}`}
+                                                                    >
+                                                                        {getStatusLabel(
+                                                                            manuscript.status,
+                                                                        )}
+                                                                    </span>
+                                                                </div>
+                                                                {manuscript.authors &&
+                                                                    manuscript
+                                                                        .authors
+                                                                        .length >
+                                                                        0 && (
+                                                                        <div className="flex flex-wrap items-center gap-1">
+                                                                            <span className="text-[10px] text-[#6C6863]">
+                                                                                All
+                                                                                authors:
+                                                                            </span>
+                                                                            {manuscript.authors.map(
+                                                                                (
+                                                                                    author,
+                                                                                    idx,
+                                                                                ) => (
+                                                                                    <span
+                                                                                        key={
+                                                                                            idx
+                                                                                        }
+                                                                                        className="text-xs text-[#6C6863]"
+                                                                                    >
+                                                                                        {
+                                                                                            author.name
+                                                                                        }
+                                                                                        {idx <
+                                                                                            manuscript
+                                                                                                .authors
+                                                                                                .length -
+                                                                                                1 &&
+                                                                                            ', '}
+                                                                                    </span>
+                                                                                ),
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                {manuscript.submitted_at && (
+                                                                    <div className="text-[10px] text-[#6C6863]">
+                                                                        Submitted:{' '}
+                                                                        {new Date(
+                                                                            manuscript.submitted_at,
+                                                                        ).toLocaleDateString()}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         ),
                                                     )}
                                                 </div>
                                             ) : (
-                                                <p className="text-xs text-[#6C6863]">
+                                                <p className="text-xs text-[#6C6863] italic">
                                                     No manuscripts
                                                 </p>
                                             )}

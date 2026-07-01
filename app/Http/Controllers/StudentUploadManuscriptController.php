@@ -28,22 +28,83 @@ class StudentUploadManuscriptController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'abstract' => 'nullable|string|max:5000',
-            'description' => 'nullable|string',
-            'keywords' => 'nullable|string',
-            'file' => 'required|file|mimes:pdf,doc,docx|max:122880', // 120MB max (120 * 1024 = 122880 KB)
-            'is_public' => 'nullable|boolean',
-        ]);
-
         try {
+            // Log the incoming request
+            \Log::info('Upload attempt', [
+                'has_file' => $request->hasFile('file'),
+                'file_valid' => $request->file('file') ? $request->file('file')->isValid() : false,
+            ]);
+
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'abstract' => 'nullable|string',
+                'description' => 'nullable|string',
+                'keywords' => 'nullable|string',
+                'file' => [
+                    'required',
+                    'file',
+                    'mimes:pdf,doc,docx',
+                    'max:2048000', // 2GB in KB
+                ],
+                'is_public' => 'nullable|boolean',
+            ]);
+
+            \Log::info('Validation passed');
+
             $file = $request->file('file');
-            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-            $filePath = $file->storeAs('documents/' . Auth::id(), $fileName, 'public');
 
-            $keywords = $request->keywords ? json_decode($request->keywords, true) : [];
+            // Check if file is valid
+            if (!$file->isValid()) {
+                throw new \Exception('Uploaded file is not valid: ' . $file->getErrorMessage());
+            }
 
+            // Log file details
+            \Log::info('File details', [
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'extension' => $file->getClientOriginalExtension(),
+                'error' => $file->getError(),
+                'is_valid' => $file->isValid(),
+            ]);
+
+            // Generate a clean filename
+            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $file->getClientOriginalExtension();
+            $cleanName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalName);
+            $fileName = time() . '_' . $cleanName . '.' . $extension;
+
+            // Create user directory if it doesn't exist
+            $userDirectory = 'documents/' . Auth::id();
+
+            // Store the file with explicit disk
+            $filePath = $file->storeAs($userDirectory, $fileName, 'public');
+
+            if (!$filePath) {
+                throw new \Exception('Failed to store file. Check storage permissions.');
+            }
+
+            // Verify file exists
+            if (!Storage::disk('public')->exists($filePath)) {
+                throw new \Exception('File was not stored properly: ' . $filePath);
+            }
+
+            \Log::info('File stored', [
+                'path' => $filePath,
+                'full_path' => Storage::disk('public')->path($filePath),
+                'exists' => Storage::disk('public')->exists($filePath),
+            ]);
+
+            // Parse keywords
+            $keywords = [];
+            if ($request->filled('keywords')) {
+                $keywords = json_decode($request->keywords, true);
+                if (!is_array($keywords)) {
+                    $keywords = [];
+                }
+            }
+
+            // Create document record
             $document = Document::create([
                 'title' => $validated['title'],
                 'abstract' => $validated['abstract'],
@@ -58,11 +119,27 @@ class StudentUploadManuscriptController extends Controller
                 'is_public' => $request->boolean('is_public', true),
             ]);
 
+            \Log::info('Document created', [
+                'id' => $document->id,
+                'title' => $document->title,
+                'file_path' => $document->file_path,
+            ]);
+
+            // Return success with document data
             return redirect()->back()->with([
                 'success' => 'Manuscript uploaded successfully!',
                 'document' => $document
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed', ['errors' => $e->errors()]);
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->with('error', 'Validation failed: ' . implode(', ', array_merge(...array_values($e->errors()))));
         } catch (\Exception $e) {
+            \Log::error('Upload failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return redirect()->back()->with('error', 'Failed to upload manuscript: ' . $e->getMessage());
         }
     }

@@ -20,6 +20,9 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronDown,
+    Key,
+    Eye,
+    EyeOff,
 } from 'lucide-react';
 import AppLayout from '@/layout/app-layout';
 import {
@@ -48,6 +51,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface User {
     id: number;
@@ -98,6 +111,10 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
     );
     const [showFilters, setShowFilters] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [deleteUser, setDeleteUser] = useState<User | null>(null);
 
     // Form state for creating user
     const [formData, setFormData] = useState({
@@ -109,6 +126,18 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
     });
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
+
+    // Reset password form state
+    const [resetPasswordData, setResetPasswordData] = useState({
+        password: '',
+        password_confirmation: '',
+    });
+    const [resetPasswordErrors, setResetPasswordErrors] = useState<
+        Record<string, string>
+    >({});
+    const [resetPasswordSubmitting, setResetPasswordSubmitting] =
+        useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Show flash messages as toast
     useEffect(() => {
@@ -209,81 +238,74 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
         });
     };
 
-    // Handle role change
-    const handleRoleChange = (
-        userId: number,
-        newRole: string,
-        userName: string,
-    ) => {
-        router.put(
-            `/admin/users/${userId}/role`,
-            { role: newRole },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success(`${userName} is now a ${newRole}`);
-                },
-                onError: () => {
-                    toast.error('Unable to update user role');
-                },
-            },
-        );
-    };
+    // Handle reset password
+    const handleResetPassword = (e: React.FormEvent) => {
+        e.preventDefault();
+        setResetPasswordSubmitting(true);
+        setResetPasswordErrors({});
 
-    // Handle status change
-    const handleStatusChange = (
-        userId: number,
-        status: string,
-        userName: string,
-    ) => {
-        const newStatus = status === 'active' ? 'active' : 'inactive';
-        router.put(
-            `/admin/users/${userId}/status`,
-            { status: newStatus },
+        if (!selectedUser) return;
+
+        router.post(
+            `/admin/users/${selectedUser.id}/reset-password`,
+            resetPasswordData,
             {
-                preserveScroll: true,
                 onSuccess: () => {
                     toast.success(
-                        `${userName} has been ${newStatus === 'active' ? 'activated' : 'deactivated'}`,
+                        `Password for ${selectedUser.name} has been reset successfully`,
                     );
+                    setShowResetPasswordModal(false);
+                    setSelectedUser(null);
+                    setResetPasswordData({
+                        password: '',
+                        password_confirmation: '',
+                    });
+                    setResetPasswordSubmitting(false);
                 },
-                onError: () => {
-                    toast.error('Unable to update user status');
+                onError: (errors) => {
+                    if (errors.password) {
+                        toast.error('Password must be at least 8 characters');
+                    } else {
+                        toast.error('Please check the form for errors');
+                    }
+                    setResetPasswordErrors(errors);
+                    setResetPasswordSubmitting(false);
                 },
             },
         );
     };
 
     // Handle delete user
-    const handleDeleteUser = (userId: number, userName: string) => {
-        if (confirm(`Are you sure you want to delete ${userName}?`)) {
-            router.delete(`/admin/users/${userId}`, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success(`${userName} has been deleted`);
-                },
-                onError: () => {
-                    toast.error('Unable to delete user');
-                },
-            });
-        }
+    const handleDeleteUser = (user: User) => {
+        setDeleteUser(user);
+        setShowDeleteDialog(true);
     };
 
-    // Handle resend verification
-    const handleResendVerification = (userId: number, userName: string) => {
-        router.post(
-            `/admin/users/${userId}/resend-verification`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    toast.success(`Verification email sent to ${userName}`);
-                },
-                onError: () => {
-                    toast.error('Unable to send verification email');
-                },
+    const confirmDelete = () => {
+        if (!deleteUser) return;
+
+        router.delete(`/admin/users/${deleteUser.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(`${deleteUser.name} has been deleted`);
+                setShowDeleteDialog(false);
+                setDeleteUser(null);
             },
-        );
+            onError: () => {
+                toast.error('Unable to delete user');
+            },
+        });
+    };
+
+    // Open reset password modal
+    const openResetPassword = (user: User) => {
+        setSelectedUser(user);
+        setResetPasswordData({
+            password: '',
+            password_confirmation: '',
+        });
+        setResetPasswordErrors({});
+        setShowResetPasswordModal(true);
     };
 
     const roleColors = {
@@ -296,22 +318,6 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
         admin: Shield,
         faculty: Award,
         student: Users,
-    };
-
-    const getStatusBadge = (user: User) => {
-        const isActive = !!user.email_verified_at;
-        if (isActive) {
-            return {
-                label: 'Active',
-                color: 'text-green-600 bg-green-50 border-green-200',
-                icon: CheckCircle,
-            };
-        }
-        return {
-            label: 'Inactive',
-            color: 'text-red-600 bg-red-50 border-red-200',
-            icon: XCircle,
-        };
     };
 
     return (
@@ -332,8 +338,8 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                             System Users
                         </h1>
                         <p className="font-sans text-base text-[#6C6863]">
-                            Manage user accounts, roles, and permissions across
-                            the KnowledgeVault platform.
+                            Manage user accounts and permissions across the
+                            KnowledgeVault platform.
                         </p>
                     </div>
                     <div className="flex gap-3">
@@ -440,28 +446,6 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div>
-                            <Label className="mb-2 block">Status</Label>
-                            <Select
-                                value={selectedStatus}
-                                onValueChange={setSelectedStatus}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        All Status
-                                    </SelectItem>
-                                    <SelectItem value="active">
-                                        Active
-                                    </SelectItem>
-                                    <SelectItem value="inactive">
-                                        Inactive
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
                 </div>
             )}
@@ -490,8 +474,8 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                     </thead>
                     <tbody>
                         {users.data.map((user) => {
-                            const StatusIcon = getStatusBadge(user).icon;
                             const RoleIcon = roleIcons[user.role];
+                            const isActive = !!user.email_verified_at;
                             return (
                                 <tr
                                     key={user.id}
@@ -523,12 +507,12 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                                 user.role.slice(1)}
                                         </span>
                                     </td>
-
                                     <td className="px-4 py-3 font-sans text-sm text-[#6C6863]">
                                         {new Date(
                                             user.created_at,
                                         ).toLocaleDateString()}
                                     </td>
+
                                     <td className="px-4 py-3 text-center">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -544,96 +528,20 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>
-                                                    Change Role
+                                                    Actions
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuItem
                                                     onClick={() =>
-                                                        handleRoleChange(
-                                                            user.id,
-                                                            'student',
-                                                            user.name,
-                                                        )
+                                                        openResetPassword(user)
                                                     }
                                                 >
-                                                    <Users className="mr-2 h-4 w-4" />
-                                                    Make Student
+                                                    <Key className="mr-2 h-4 w-4" />
+                                                    Reset Password
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        handleRoleChange(
-                                                            user.id,
-                                                            'faculty',
-                                                            user.name,
-                                                        )
-                                                    }
-                                                >
-                                                    <Award className="mr-2 h-4 w-4" />
-                                                    Make Faculty
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        handleRoleChange(
-                                                            user.id,
-                                                            'admin',
-                                                            user.name,
-                                                        )
-                                                    }
-                                                >
-                                                    <Shield className="mr-2 h-4 w-4" />
-                                                    Make Admin
-                                                </DropdownMenuItem>
-
                                                 <DropdownMenuSeparator />
-
-                                                {!user.email_verified_at && (
-                                                    <>
-                                                        <DropdownMenuItem
-                                                            onClick={() =>
-                                                                handleResendVerification(
-                                                                    user.id,
-                                                                    user.name,
-                                                                )
-                                                            }
-                                                        >
-                                                            <RefreshCw className="mr-2 h-4 w-4" />
-                                                            Resend Verification
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                    </>
-                                                )}
-
                                                 <DropdownMenuItem
                                                     onClick={() =>
-                                                        handleStatusChange(
-                                                            user.id,
-                                                            user.email_verified_at
-                                                                ? 'inactive'
-                                                                : 'active',
-                                                            user.name,
-                                                        )
-                                                    }
-                                                >
-                                                    {user.email_verified_at ? (
-                                                        <>
-                                                            <UserX className="mr-2 h-4 w-4" />
-                                                            Deactivate
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <UserCheck className="mr-2 h-4 w-4" />
-                                                            Activate
-                                                        </>
-                                                    )}
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator />
-
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        handleDeleteUser(
-                                                            user.id,
-                                                            user.name,
-                                                        )
+                                                        handleDeleteUser(user)
                                                     }
                                                     className="text-red-600 focus:text-red-600"
                                                 >
@@ -758,7 +666,7 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                 )}
                             </div>
 
-                            <div className='w-full'> 
+                            <div className="w-full">
                                 <Label htmlFor="role">Role *</Label>
                                 <Select
                                     value={formData.role}
@@ -768,12 +676,11 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                             role: value,
                                         })
                                     }
-                                    
                                 >
-                                    <SelectTrigger className='w-full'>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select role" />
                                     </SelectTrigger>
-                                    <SelectContent className='w-full'>
+                                    <SelectContent className="w-full">
                                         <SelectItem value="student">
                                             Student
                                         </SelectItem>
@@ -800,6 +707,7 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                                         })
                                     }
                                     required
+                                    minLength={8}
                                 />
                                 {formErrors.password && (
                                     <p className="mt-1 text-xs text-red-600">
@@ -843,6 +751,178 @@ const AdminUserManagement: React.FC<UserManagementProps> = ({
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* Reset Password Dialog */}
+            <Dialog
+                open={showResetPasswordModal}
+                onOpenChange={setShowResetPasswordModal}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Reset Password</DialogTitle>
+                        <DialogDescription>
+                            {selectedUser && (
+                                <span>
+                                    Reset password for{' '}
+                                    <strong>{selectedUser.name}</strong> (
+                                    {selectedUser.email})
+                                </span>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleResetPassword}>
+                        <div className="space-y-4 py-4">
+                            <div>
+                                <Label htmlFor="reset-password">
+                                    New Password *
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        id="reset-password"
+                                        type={
+                                            showPassword ? 'text' : 'password'
+                                        }
+                                        value={resetPasswordData.password}
+                                        onChange={(e) =>
+                                            setResetPasswordData({
+                                                ...resetPasswordData,
+                                                password: e.target.value,
+                                            })
+                                        }
+                                        required
+                                        minLength={8}
+                                        className="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowPassword(!showPassword)
+                                        }
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-[#6C6863] hover:text-[#1A1A1A]"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </div>
+                                {resetPasswordErrors.password && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {resetPasswordErrors.password}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <Label htmlFor="reset-password-confirmation">
+                                    Confirm New Password *
+                                </Label>
+                                <Input
+                                    id="reset-password-confirmation"
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={
+                                        resetPasswordData.password_confirmation
+                                    }
+                                    onChange={(e) =>
+                                        setResetPasswordData({
+                                            ...resetPasswordData,
+                                            password_confirmation:
+                                                e.target.value,
+                                        })
+                                    }
+                                    required
+                                />
+                            </div>
+
+                            <div className="rounded bg-[#F9F8F6] p-3">
+                                <p className="text-xs font-medium text-[#6C6863]">
+                                    Password Requirements:
+                                </p>
+                                <ul className="mt-1 space-y-1 text-xs text-[#6C6863]">
+                                    <li className="flex items-center gap-1">
+                                        <CheckCircle
+                                            className={`h-3 w-3 ${resetPasswordData.password.length >= 8 ? 'text-green-500' : 'text-[#6C6863]/30'}`}
+                                        />
+                                        At least 8 characters
+                                    </li>
+                                    <li className="flex items-center gap-1">
+                                        <CheckCircle
+                                            className={`h-3 w-3 ${/[A-Z]/.test(resetPasswordData.password) ? 'text-green-500' : 'text-[#6C6863]/30'}`}
+                                        />
+                                        At least one uppercase letter
+                                    </li>
+                                    <li className="flex items-center gap-1">
+                                        <CheckCircle
+                                            className={`h-3 w-3 ${/[a-z]/.test(resetPasswordData.password) ? 'text-green-500' : 'text-[#6C6863]/30'}`}
+                                        />
+                                        At least one lowercase letter
+                                    </li>
+                                    <li className="flex items-center gap-1">
+                                        <CheckCircle
+                                            className={`h-3 w-3 ${/[0-9]/.test(resetPasswordData.password) ? 'text-green-500' : 'text-[#6C6863]/30'}`}
+                                        />
+                                        At least one number
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setShowResetPasswordModal(false);
+                                    setSelectedUser(null);
+                                    setResetPasswordData({
+                                        password: '',
+                                        password_confirmation: '',
+                                    });
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={resetPasswordSubmitting}
+                            >
+                                {resetPasswordSubmitting
+                                    ? 'Resetting...'
+                                    : 'Reset Password'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete User</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete{' '}
+                            <strong>{deleteUser?.name}</strong>? This action
+                            cannot be undone and will permanently remove the
+                            user's account and all associated data.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 };

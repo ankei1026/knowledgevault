@@ -90,13 +90,6 @@ class StudentFacultyReviewerController extends Controller
             \Log::error('Failed to send notification: ' . $e->getMessage());
         }
 
-        // Also notify the student that reviewer was assigned
-        try {
-            Auth::user()->notify(new ManuscriptReviewerAssignedNotification($document, Auth::user(), 'assigned_reviewer'));
-        } catch (\Exception $e) {
-            \Log::error('Failed to send notification to student: ' . $e->getMessage());
-        }
-
         return back()->with('success', "Reviewer assigned successfully! {$reviewer->name} has been notified.");
     }
 

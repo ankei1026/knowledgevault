@@ -22,6 +22,7 @@ import {
     ChevronRight,
     ChevronDown,
     MoreVertical,
+    Award,
 } from 'lucide-react';
 import AppLayout from '@/layout/app-layout';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,11 @@ interface Document {
         pivot: { role: string; status: string };
     }>;
     reviewer: { id: number; name: string; email: string } | null;
+    final_submission?: {
+        id: number;
+        status: 'pending' | 'verified' | 'archived';
+        submitted_at: string;
+    } | null;
 }
 
 interface MyManuscriptsProps {
@@ -145,6 +151,17 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
         }
     };
 
+    const getFinalSubmissionStatusBadge = (status: string) => {
+        switch (status) {
+            case 'verified':
+                return 'text-green-600 bg-green-50 border-green-200';
+            case 'archived':
+                return 'text-blue-600 bg-blue-50 border-blue-200';
+            default:
+                return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        }
+    };
+
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'approved':
@@ -207,6 +224,32 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
                     },
                     onError: () => {
                         toast.error('Failed to submit manuscript');
+                    },
+                },
+            );
+        }
+    };
+
+    const handleSubmitFinalPaper = (id: number, title: string) => {
+        if (
+            confirm(
+                `Submit "${title}" as a final paper? This action cannot be undone.`,
+            )
+        ) {
+            router.post(
+                `/student/final-papers/submit/${id}`,
+                {},
+                {
+                    onSuccess: () => {
+                        toast.success(
+                            'Document submitted as final paper successfully!',
+                        );
+                        setActionMenu(null);
+                    },
+                    onError: (errors) => {
+                        toast.error(
+                            'Failed to submit final paper. Please try again.',
+                        );
                     },
                 },
             );
@@ -281,70 +324,6 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
                     })}
                 </div>
 
-                {/* Filters Bar */}
-                {/* <div className="mb-6 flex flex-wrap items-center gap-4">
-                    <div className="relative max-w-md flex-1">
-                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
-                        <Input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            onKeyPress={(e) =>
-                                e.key === 'Enter' && applyFilters()
-                            }
-                            placeholder="Search by title..."
-                            className="pl-9"
-                        />
-                    </div>
-
-                    <Select
-                        value={statusFilter}
-                        onValueChange={setStatusFilter}
-                    >
-                        <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="pending_review">
-                                Pending Review
-                            </SelectItem>
-                            <SelectItem value="approved">Approved</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-36">
-                            <SelectValue placeholder="Sort by" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="latest">Latest First</SelectItem>
-                            <SelectItem value="oldest">Oldest First</SelectItem>
-                            <SelectItem value="title_asc">Title A-Z</SelectItem>
-                            <SelectItem value="title_desc">
-                                Title Z-A
-                            </SelectItem>
-                            <SelectItem value="views">Most Viewed</SelectItem>
-                            <SelectItem value="downloads">
-                                Most Downloaded
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Button
-                        onClick={applyFilters}
-                        className="bg-[#1A1A1A] hover:bg-[#D4AF37]"
-                    >
-                        Apply
-                    </Button>
-
-                    <Button variant="outline" onClick={resetFilters}>
-                        Reset
-                    </Button>
-                </div> */}
-
                 {/* Documents Grid */}
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {documents.data.map((doc) => (
@@ -354,12 +333,28 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
                         >
                             <div className="mb-3 flex items-start justify-between">
                                 <FileText className="h-8 w-8 text-[#6C6863] transition-colors duration-500 group-hover:text-[#D4AF37]" />
-                                <span
-                                    className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] ${getStatusBadge(doc.status)}`}
-                                >
-                                    {getStatusIcon(doc.status)}
-                                    {getStatusLabel(doc.status)}
-                                </span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span
+                                        className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] ${getStatusBadge(doc.status)}`}
+                                    >
+                                        {getStatusIcon(doc.status)}
+                                        {getStatusLabel(doc.status)}
+                                    </span>
+                                    {doc.final_submission && (
+                                        <span
+                                            className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] ${getFinalSubmissionStatusBadge(doc.final_submission.status)}`}
+                                        >
+                                            <Award className="h-3 w-3" />
+                                            Final:{' '}
+                                            {doc.final_submission.status
+                                                .charAt(0)
+                                                .toUpperCase() +
+                                                doc.final_submission.status.slice(
+                                                    1,
+                                                )}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <h3 className="font-playfair mb-2 line-clamp-2 text-lg text-[#1A1A1A]">
@@ -375,10 +370,6 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
                                     <Eye className="h-3 w-3" />
                                     {doc.views} views
                                 </span>
-                                <span className="flex items-center gap-1">
-                                    <Download className="h-3 w-3" />
-                                    {doc.downloads} downloads
-                                </span>
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -390,36 +381,6 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
                                     >
                                         <Eye className="h-4 w-4" />
                                     </Link>
-                                    <Link
-                                        href={`/student/my-manuscripts/${doc.id}/edit`}
-                                        className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
-                                        title="Edit"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </Link>
-                                    <Link
-                                        href={`/student/my-manuscripts/${doc.id}/analytics`}
-                                        className="p-1.5 text-[#6C6863] transition-colors hover:text-[#D4AF37]"
-                                        title="Analytics"
-                                    >
-                                        <BarChart3 className="h-4 w-4" />
-                                    </Link>
-
-                                    {/* Submit as Final Paper Button */}
-                                    {doc.status === 'approved' && (
-                                        <button
-                                            // onClick={() =>
-                                            //     handleSubmitFinalPaper(
-                                            //         doc.id,
-                                            //         doc.title,
-                                            //     )
-                                            // }
-                                            className="p-1.5 text-green-600 transition-colors hover:text-[#D4AF37]"
-                                            title="Submit as Final Paper"
-                                        >
-                                            <Send className="h-4 w-4" />
-                                        </button>
-                                    )}
                                 </div>
 
                                 <div className="relative">
@@ -437,7 +398,7 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
                                     </button>
 
                                     {actionMenu === doc.id && (
-                                        <div className="absolute top-full right-0 z-10 mt-1 min-w-40 border border-[#1A1A1A]/10 bg-white shadow-lg">
+                                        <div className="absolute top-full right-0 z-10 mt-1 min-w-44 border border-[#1A1A1A]/10 bg-white shadow-lg">
                                             <div className="p-1">
                                                 {doc.status === 'draft' && (
                                                     <button
@@ -452,6 +413,28 @@ const MyManuscripts: React.FC<MyManuscriptsProps> = ({
                                                         <Send className="h-3 w-3" />
                                                         Submit for Review
                                                     </button>
+                                                )}
+                                                {doc.status === 'approved' &&
+                                                    !doc.final_submission && (
+                                                        <button
+                                                            onClick={() =>
+                                                                handleSubmitFinalPaper(
+                                                                    doc.id,
+                                                                    doc.title,
+                                                                )
+                                                            }
+                                                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-green-600 transition-colors hover:bg-green-50"
+                                                        >
+                                                            <Award className="h-3 w-3" />
+                                                            Submit as Final
+                                                            Paper
+                                                        </button>
+                                                    )}
+                                                {doc.final_submission && (
+                                                    <div className="flex items-center gap-2 px-3 py-2 text-sm text-[#6C6863]">
+                                                        <Award className="h-3 w-3" />
+                                                        Final Paper Submitted
+                                                    </div>
                                                 )}
                                                 <Link
                                                     href={`/student/my-manuscripts/${doc.id}/edit`}

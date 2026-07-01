@@ -70,7 +70,7 @@ class ManuscriptReviewerAssignedNotification extends Notification
             'assigned_by_id' => $this->assignedBy->id,
             'assigned_by_name' => $this->assignedBy->name,
             'message' => "{$this->assignedBy->name} assigned you as a {$this->role} for: {$this->document->title}",
-            'action_url' => "/documents/{$this->document->id}",
+            'action_url' => "/faculty/review/{$this->document->id}",
             'action_text' => 'View Manuscript',
         ];
     }

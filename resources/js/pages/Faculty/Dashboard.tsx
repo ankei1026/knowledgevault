@@ -13,6 +13,10 @@ import {
     ChevronRight,
     FileText,
     Send,
+    Award,
+    Archive,
+    Users,
+    Bell,
 } from 'lucide-react';
 import AppLayout from '@/layout/app-layout';
 
@@ -29,12 +33,24 @@ interface FacultyDashboardProps {
         completed_reviews: number;
         total_reviews: number;
         avg_response_time: string;
+        pending_final_submissions: number;
+        verified_final_submissions: number;
+        archived_final_submissions: number;
+        total_final_submissions: number;
     };
     pendingReviews: Array<{
         id: number;
         title: string;
         author: string;
         author_email: string;
+        submitted_at: string;
+        status: string;
+    }>;
+    pendingFinalSubmissions: Array<{
+        id: number;
+        title: string;
+        student: string;
+        student_email: string;
         submitted_at: string;
         status: string;
     }>;
@@ -46,12 +62,21 @@ interface FacultyDashboardProps {
         reviewed_at: string;
         feedback: string | null;
     }>;
+    recentFinalSubmissions: Array<{
+        id: number;
+        title: string;
+        student: string;
+        verified_at: string;
+        status: string;
+        verified_by: string;
+    }>;
     recentActivity: Array<{
         type: string;
         action: string;
         title: string;
         date: string;
         status: string;
+        student?: string;
     }>;
 }
 
@@ -59,7 +84,9 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
     user,
     stats,
     pendingReviews,
+    pendingFinalSubmissions,
     recentlyReviewed,
+    recentFinalSubmissions,
     recentActivity,
 }) => {
     const statCards = [
@@ -68,18 +95,35 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
             value: stats.pending_reviews,
             icon: Clock,
             bgClass: 'border-t-[#E67E22]',
+            link: '/faculty/pending-submissions',
         },
         {
             title: 'Completed Reviews',
             value: stats.completed_reviews,
             icon: CheckCircle,
             bgClass: 'border-t-green-500',
+            link: '/faculty/review-history',
+        },
+        {
+            title: 'Pending Final Submissions',
+            value: stats.pending_final_submissions,
+            icon: Award,
+            bgClass: 'border-t-[#D4AF37]',
+            link: '/faculty/final-submissions?status=pending',
+        },
+        {
+            title: 'Verified Final Papers',
+            value: stats.verified_final_submissions,
+            icon: Archive,
+            bgClass: 'border-t-blue-500',
+            link: '/faculty/final-submissions?status=verified',
         },
         {
             title: 'Total Reviews',
             value: stats.total_reviews,
             icon: FileText,
             bgClass: 'border-t-[#1A1A1A]',
+            link: '/faculty/review-history',
         },
     ];
 
@@ -87,9 +131,14 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
         switch (status) {
             case 'approved':
                 return 'text-green-600 bg-green-50 border-green-200';
+            case 'verified':
+                return 'text-blue-600 bg-blue-50 border-blue-200';
+            case 'archived':
+                return 'text-gray-600 bg-gray-50 border-gray-200';
             case 'rejected':
                 return 'text-red-600 bg-red-50 border-red-200';
             case 'pending_review':
+            case 'pending':
                 return 'text-yellow-600 bg-yellow-50 border-yellow-200';
             default:
                 return 'text-gray-600 bg-gray-50 border-gray-200';
@@ -99,11 +148,32 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'approved':
+            case 'verified':
                 return <CheckCircle className="h-3 w-3" />;
             case 'rejected':
+            case 'archived':
                 return <XCircle className="h-3 w-3" />;
             default:
                 return <Clock className="h-3 w-3" />;
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'pending_review':
+                return 'Pending';
+            case 'approved':
+                return 'Approved';
+            case 'rejected':
+                return 'Rejected';
+            case 'verified':
+                return 'Verified';
+            case 'archived':
+                return 'Archived';
+            case 'pending':
+                return 'Pending';
+            default:
+                return status;
         }
     };
 
@@ -121,21 +191,22 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                         </span>
                     </div>
                     <h1 className="font-playfair mb-2 text-4xl leading-[1.1] text-[#1A1A1A] md:text-5xl">
-                        Welcome back, Prof. {user.name.split(' ')[0]}
+                        Welcome, {user.name.split(' ')[0]}
                     </h1>
                     <p className="font-sans text-base leading-relaxed text-[#6C6863]">
-                        Review manuscripts and track your academic
-                        contributions.
+                        Review manuscripts, verify final submissions, and track
+                        your academic contributions.
                     </p>
                 </div>
 
                 {/* Stats Grid */}
-                <div className="mb-12 grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mb-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                     {statCards.map((card, index) => {
                         const Icon = card.icon;
                         return (
-                            <div
+                            <Link
                                 key={index}
+                                href={card.link}
                                 className={`group ${card.bgClass} border-t-2 pt-4 transition-all duration-700 hover:bg-[#F9F8F6]/50`}
                             >
                                 <div className="flex items-start justify-between">
@@ -151,15 +222,16 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                                         <Icon className="h-4 w-4 text-[#6C6863] transition-colors duration-500 group-hover:text-[#D4AF37]" />
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>
 
                 {/* Two Column Layout */}
                 <div className="mb-12 grid gap-6 lg:grid-cols-12">
-                    {/* Left Column - Pending Reviews */}
+                    {/* Left Column */}
                     <div className="lg:col-span-7">
+                        {/* Pending Reviews */}
                         <div className="border border-[#1A1A1A]/10 p-5">
                             <div className="mb-4 flex items-center justify-between">
                                 <div>
@@ -225,6 +297,77 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                             </div>
                         </div>
 
+                        {/* Pending Final Submissions */}
+                        <div className="mt-6 border border-[#1A1A1A]/10 p-5">
+                            <div className="mb-4 flex items-center justify-between">
+                                <div>
+                                    <div className="mb-2 flex items-center gap-2">
+                                        <div className="h-px w-5 bg-[#D4AF37]" />
+                                        <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
+                                            Final Papers
+                                        </span>
+                                    </div>
+                                    <h3 className="font-playfair text-lg text-[#1A1A1A]">
+                                        Pending Final Submissions
+                                    </h3>
+                                </div>
+                                <Link
+                                    href="/faculty/final-submissions?status=pending"
+                                    className="flex items-center gap-1 font-sans text-xs text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
+                                >
+                                    View All{' '}
+                                    <ChevronRight className="h-3 w-3" />
+                                </Link>
+                            </div>
+
+                            <div className="space-y-3">
+                                {pendingFinalSubmissions.length > 0 ? (
+                                    pendingFinalSubmissions.map(
+                                        (submission) => (
+                                            <div
+                                                key={submission.id}
+                                                className="group border-b border-[#1A1A1A]/10 pb-3 transition-all duration-500 last:border-0 hover:pl-2"
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <h4 className="font-playfair text-sm text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37]">
+                                                            {submission.title}
+                                                        </h4>
+                                                        <p className="mt-1 font-sans text-xs text-[#6C6863]">
+                                                            By:{' '}
+                                                            {submission.student}
+                                                        </p>
+                                                        <p className="font-sans text-[10px] text-[#6C6863]">
+                                                            Submitted:{' '}
+                                                            {
+                                                                submission.submitted_at
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                    <Link
+                                                        href={`/faculty/final-submissions/${submission.id}`}
+                                                        className="ml-2 rounded border border-[#D4AF37] px-3 py-1 text-xs text-[#D4AF37] transition-colors hover:bg-[#D4AF37] hover:text-white"
+                                                    >
+                                                        Verify
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        ),
+                                    )
+                                ) : (
+                                    <div className="py-8 text-center">
+                                        <Award className="mx-auto h-8 w-8 text-[#6C6863]/30" />
+                                        <p className="mt-2 font-sans text-sm text-[#6C6863]">
+                                            No pending final submissions
+                                        </p>
+                                        <p className="font-sans text-xs text-[#6C6863]">
+                                            All final papers have been processed
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Recently Reviewed */}
                         {recentlyReviewed.length > 0 && (
                             <div className="mt-6 border border-[#1A1A1A]/10 p-5">
@@ -240,13 +383,6 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                                             Recently Reviewed
                                         </h3>
                                     </div>
-                                    <Link
-                                        href="/faculty/review-history"
-                                        className="flex items-center gap-1 font-sans text-xs text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                    >
-                                        View All{' '}
-                                        <ChevronRight className="h-3 w-3" />
-                                    </Link>
                                 </div>
 
                                 <div className="space-y-3">
@@ -267,10 +403,9 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                                                             {getStatusIcon(
                                                                 review.status,
                                                             )}
-                                                            {review.status ===
-                                                            'approved'
-                                                                ? 'Approved'
-                                                                : 'Rejected'}
+                                                            {getStatusLabel(
+                                                                review.status,
+                                                            )}
                                                         </span>
                                                     </div>
                                                     <p className="mt-1 font-sans text-xs text-[#6C6863]">
@@ -282,7 +417,7 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                                                     </p>
                                                 </div>
                                                 <Link
-                                                    href={`/documents/${review.id}`}
+                                                    href={`/faculty/review/${review.id}`}
                                                     className="text-[#D4AF37] transition-colors hover:text-[#1A1A1A]"
                                                 >
                                                     <Eye className="h-4 w-4" />
@@ -295,9 +430,70 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                         )}
                     </div>
 
-                    {/* Right Column - Recent Activity */}
+                    {/* Right Column */}
                     <div className="lg:col-span-5">
-                        <div className="border border-[#1A1A1A]/10 p-5">
+                        {/* Recent Final Submissions */}
+                        {recentFinalSubmissions.length > 0 && (
+                            <div className="border border-[#1A1A1A]/10 p-5">
+                                <div className="mb-3 flex items-center gap-2">
+                                    <div className="h-px w-5 bg-[#D4AF37]" />
+                                    <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
+                                        Recent Final Papers
+                                    </span>
+                                </div>
+                                <h3 className="font-playfair mb-3 text-lg text-[#1A1A1A]">
+                                    Verified Final Papers
+                                </h3>
+
+                                <div className="space-y-3">
+                                    {recentFinalSubmissions.map(
+                                        (submission) => (
+                                            <div
+                                                key={submission.id}
+                                                className="flex items-start gap-2 border-l-2 border-blue-500/30 pl-2"
+                                            >
+                                                <div className="flex-1">
+                                                    <p className="font-sans text-xs text-[#1A1A1A]">
+                                                        <span className="font-playfair text-[#D4AF37]">
+                                                            "{submission.title}"
+                                                        </span>
+                                                    </p>
+                                                    <p className="mt-1 font-sans text-xs text-[#6C6863]">
+                                                        By: {submission.student}
+                                                    </p>
+                                                    <p className="font-sans text-[10px] text-[#6C6863]">
+                                                        Verified:{' '}
+                                                        {submission.verified_at}
+                                                        {submission.verified_by && (
+                                                            <>
+                                                                {' '}
+                                                                by{' '}
+                                                                {
+                                                                    submission.verified_by
+                                                                }
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                <span
+                                                    className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] ${getStatusBadge(submission.status)}`}
+                                                >
+                                                    {getStatusIcon(
+                                                        submission.status,
+                                                    )}
+                                                    {getStatusLabel(
+                                                        submission.status,
+                                                    )}
+                                                </span>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Recent Activity */}
+                        <div className="mt-6 border border-[#1A1A1A]/10 p-5">
                             <div className="mb-3 flex items-center gap-2">
                                 <div className="h-px w-5 bg-[#D4AF37]" />
                                 <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
@@ -313,7 +509,12 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                                     recentActivity.map((activity, index) => (
                                         <div
                                             key={index}
-                                            className="flex items-start gap-2 border-l-2 border-[#D4AF37]/30 pl-2"
+                                            className={`flex items-start gap-2 border-l-2 ${
+                                                activity.type ===
+                                                'final_submission'
+                                                    ? 'border-[#D4AF37]/30'
+                                                    : 'border-blue-500/30'
+                                            } pl-2`}
                                         >
                                             <div className="flex-1">
                                                 <p className="font-sans text-xs text-[#1A1A1A]">
@@ -331,11 +532,24 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                                                             : activity.title}
                                                         "
                                                     </span>
+                                                    {activity.student && (
+                                                        <span className="text-[#6C6863]">
+                                                            {' '}
+                                                            by{' '}
+                                                            {activity.student}
+                                                        </span>
+                                                    )}
                                                 </p>
                                                 <p className="mt-1 font-sans text-[10px] text-[#6C6863]">
                                                     {activity.date}
                                                 </p>
                                             </div>
+                                            {activity.status === 'verified' && (
+                                                <CheckCircle className="h-3 w-3 text-blue-500" />
+                                            )}
+                                            {activity.status === 'archived' && (
+                                                <Archive className="h-3 w-3 text-gray-500" />
+                                            )}
                                             {activity.status === 'approved' && (
                                                 <CheckCircle className="h-3 w-3 text-green-600" />
                                             )}
@@ -371,7 +585,17 @@ const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                             </span>
                         </Link>
                         <Link
-                            href="/documents/search"
+                            href="/faculty/final-submissions?status=pending"
+                            className="group relative inline-flex h-10 items-center overflow-hidden border border-[#D4AF37] px-5 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
+                        >
+                            <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 group-hover:translate-x-0" />
+                            <span className="relative z-10 flex items-center gap-2 font-sans text-xs tracking-[0.2em] text-[#1A1A1A] group-hover:text-white">
+                                <Award className="h-3 w-3" />
+                                Verify Final Papers
+                            </span>
+                        </Link>
+                        <Link
+                            href="/documents"
                             className="inline-flex h-10 items-center gap-2 border border-[#1A1A1A] px-5 font-sans text-xs tracking-[0.2em] text-[#1A1A1A] transition-all duration-500 hover:bg-[#1A1A1A] hover:text-white"
                         >
                             <BookOpen className="h-3 w-3" />

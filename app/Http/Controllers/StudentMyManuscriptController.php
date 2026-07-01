@@ -3,9 +3,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Document;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class StudentMyManuscriptController extends Controller
@@ -15,10 +15,8 @@ class StudentMyManuscriptController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-
-        $query = Document::where('user_id', $user->id)
-            ->with(['collaborators', 'reviewer']);
+        $query = Document::where('user_id', auth()->id())
+            ->with(['reviewer', 'collaborators', 'finalSubmission']);
 
         // Apply status filter
         if ($request->filled('status') && $request->status !== 'all') {
@@ -29,15 +27,15 @@ class StudentMyManuscriptController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('abstract', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+                $q->where('title', 'LIKE', "%{$search}%")
+                    ->orWhere('abstract', 'LIKE', "%{$search}%")
+                    ->orWhere('description', 'LIKE', "%{$search}%")
+                    ->orWhereJsonContains('authors', $search);
             });
         }
 
-        // Sorting
-        $sort = $request->get('sort', 'latest');
-        switch ($sort) {
+        // Apply sorting
+        switch ($request->sort) {
             case 'oldest':
                 $query->orderBy('created_at', 'asc');
                 break;
@@ -53,101 +51,229 @@ class StudentMyManuscriptController extends Controller
             case 'downloads':
                 $query->orderBy('downloads', 'desc');
                 break;
-            default:
+            default: // latest
                 $query->orderBy('created_at', 'desc');
+                break;
         }
 
         $documents = $query->paginate(12);
 
-        // Get statistics
-        $stats = [
-            'total' => Document::where('user_id', $user->id)->count(),
-            'draft' => Document::where('user_id', $user->id)->where('status', 'draft')->count(),
-            'pending_review' => Document::where('user_id', $user->id)->where('status', 'pending_review')->count(),
-            'approved' => Document::where('user_id', $user->id)->where('status', 'approved')->count(),
-            'rejected' => Document::where('user_id', $user->id)->where('status', 'rejected')->count(),
-            'published' => Document::where('user_id', $user->id)->where('status', 'published')->count(),
-            'total_views' => Document::where('user_id', $user->id)->sum('views'),
-            'total_downloads' => Document::where('user_id', $user->id)->sum('downloads'),
-            'total_citations' => Document::where('user_id', $user->id)->sum('citations'),
-        ];
+        // Transform documents to include final submission status
+        $documents->getCollection()->transform(function ($document) {
+            $document->final_submission = $document->finalSubmission;
+            return $document;
+        });
 
         return Inertia::render('Student/MyManuscripts', [
             'documents' => $documents,
-            'stats' => $stats,
+            'stats' => $this->getStats(),
             'filters' => [
-                'status' => $request->status,
-                'search' => $request->search,
-                'sort' => $sort,
+                'status' => $request->input('status', 'all'),
+                'search' => $request->input('search', ''),
+                'sort' => $request->input('sort', 'latest'),
             ],
         ]);
     }
 
+    /**
+     * Get statistics for the student's manuscripts.
+     */
+    private function getStats(): array
+    {
+        $userId = auth()->id();
+
+        return [
+            'total' => Document::where('user_id', $userId)->count(),
+            'draft' => Document::where('user_id', $userId)
+                ->where('status', 'draft')
+                ->count(),
+            'pending_review' => Document::where('user_id', $userId)
+                ->where('status', 'pending_review')
+                ->count(),
+            'approved' => Document::where('user_id', $userId)
+                ->where('status', 'approved')
+                ->count(),
+            'rejected' => Document::where('user_id', $userId)
+                ->where('status', 'rejected')
+                ->count(),
+            'published' => Document::where('user_id', $userId)
+                ->where('status', 'published')
+                ->count(),
+            'total_views' => Document::where('user_id', $userId)->sum('views'),
+            'total_downloads' => Document::where('user_id', $userId)->sum('downloads'),
+            'total_citations' => Document::where('user_id', $userId)->sum('citations'),
+        ];
+    }
+
+    /**
+     * Show a specific manuscript.
+     */
+    // app/Http/Controllers/Student/StudentMyManuscriptController.php
+
     public function show($id)
     {
-        $document = Document::where('user_id', Auth::id())
-            ->with(['collaborators', 'reviewer', 'user'])
+        $document = Document::with([
+            'user',
+            'reviewer',
+            'collaborators',
+            'finalSubmission',
+            'finalSubmission.verifiedBy'
+        ])
+            ->where('user_id', auth()->id())
             ->findOrFail($id);
 
-        // Get review history if the relationship exists
-        $reviewHistory = [];
-
-        // Check if the reviews relationship exists
-        if (method_exists($document, 'reviews')) {
-            try {
-                $reviewHistory = $document->reviews()
-                    ->with('reviewer')
-                    ->latest()
-                    ->get()
-                    ->toArray();
-            } catch (\Exception $e) {
-                // If the relationship fails, just use empty array
-                $reviewHistory = [];
-            }
-        }
-
-        // If you have a reviewer_feedback field, you can include it
-        if ($document->reviewer_feedback) {
-            $reviewHistory[] = [
-                'id' => 0,
-                'reviewer_id' => $document->reviewer_id,
-                'document_id' => $document->id,
-                'rating' => null,
-                'feedback' => $document->reviewer_feedback,
-                'status' => $document->status,
-                'created_at' => $document->reviewed_at ?? $document->updated_at,
-                'reviewer' => $document->reviewer ? [
-                    'id' => $document->reviewer->id,
-                    'name' => $document->reviewer->name,
-                    'email' => $document->reviewer->email,
-                ] : null,
-            ];
-        }
-
-        // Get submission statistics
+        // Calculate stats with proper fallback values
         $stats = [
             'views' => $document->views ?? 0,
             'downloads' => $document->downloads ?? 0,
             'citations' => $document->citations ?? 0,
-            'submitted_at' => $document->submitted_at,
-            'reviewed_at' => $document->reviewed_at,
+            'submitted_at' => $document->submitted_at ?? null,
+            'reviewed_at' => $document->reviewed_at ?? null,
         ];
+
+        // Get authors as array
+        $authors = $document->authors ?? [];
 
         return Inertia::render('Student/MyManuscriptDetail', [
             'document' => $document,
-            'reviewHistory' => $reviewHistory,
+            'reviewHistory' => [],
             'stats' => $stats,
+            'authors' => $authors, // Pass authors separately
         ]);
     }
 
 
     /**
-     * Show the form for editing the specified manuscript.
+     * Add a co-author to the document.
+     */
+    public function addAuthor(Request $request, $id)
+    {
+        $document = Document::where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        // Only allow if status is draft or rejected
+        if (!in_array($document->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'Cannot add authors when document is not in draft or rejected status.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        // Get current authors array
+        $authors = $document->authors ?? [];
+
+        // Check if author already exists (by name)
+        $exists = collect($authors)->contains(function ($author) use ($validated) {
+            return $author['name'] === $validated['name'];
+        });
+
+        if ($exists) {
+            return back()->with('error', 'This author is already in the list.');
+        }
+
+        // Add new author
+        $authors[] = [
+            'name' => $validated['name'],
+            'email' => $validated['email'] ?? null,
+        ];
+
+        $document->authors = $authors;
+        $document->save();
+
+        return back()->with('success', 'Co-author added successfully!');
+    }
+
+    /**
+     * Remove a co-author from the document.
+     */
+    public function removeAuthor(Request $request, $id)
+    {
+        $document = Document::where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        // Only allow if status is draft or rejected
+        if (!in_array($document->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'Cannot remove authors when document is not in draft or rejected status.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        // Get current authors array
+        $authors = $document->authors ?? [];
+
+        // Filter out the author to remove
+        $authors = array_filter($authors, function ($author) use ($validated) {
+            return $author['name'] !== $validated['name'];
+        });
+
+        // Re-index array
+        $authors = array_values($authors);
+
+        $document->authors = $authors;
+        $document->save();
+
+        return back()->with('success', 'Co-author removed successfully!');
+    }
+
+    /**
+     * Update a co-author's details.
+     */
+    public function updateAuthor(Request $request, $id)
+    {
+        $document = Document::where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        // Only allow if status is draft or rejected
+        if (!in_array($document->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'Cannot update authors when document is not in draft or rejected status.');
+        }
+
+        $validated = $request->validate([
+            'old_name' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        // Get current authors array
+        $authors = $document->authors ?? [];
+
+        // Find and update the author
+        $found = false;
+        foreach ($authors as &$author) {
+            if ($author['name'] === $validated['old_name']) {
+                $author['name'] = $validated['name'];
+                $author['email'] = $validated['email'] ?? null;
+                $found = true;
+                break;
+            }
+        }
+
+        if (!$found) {
+            return back()->with('error', 'Author not found.');
+        }
+
+        $document->authors = $authors;
+        $document->save();
+
+        return back()->with('success', 'Author updated successfully!');
+    }
+    /**
+     * Show the edit form for a manuscript.
      */
     public function edit($id)
     {
-        $document = Document::where('user_id', Auth::id())
+        $document = Document::where('user_id', auth()->id())
             ->findOrFail($id);
+
+        // Only allow editing if status is draft or rejected
+        if (!in_array($document->status, ['draft', 'rejected'])) {
+            return redirect()->route('student.my-manuscripts')
+                ->with('error', 'This document cannot be edited in its current status.');
+        }
 
         return Inertia::render('Student/EditManuscript', [
             'document' => $document,
@@ -155,92 +281,88 @@ class StudentMyManuscriptController extends Controller
     }
 
     /**
-     * Update the specified manuscript.
+     * Update a manuscript.
      */
     public function update(Request $request, $id)
     {
-        $document = Document::where('user_id', Auth::id())
+        $document = Document::where('user_id', auth()->id())
             ->findOrFail($id);
 
-        $request->validate([
+        // Only allow editing if status is draft or rejected
+        if (!in_array($document->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'This document cannot be edited in its current status.');
+        }
+
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'abstract' => 'nullable|string|max:5000',
+            'abstract' => 'nullable|string',
             'description' => 'nullable|string',
             'keywords' => 'nullable|array',
+            'authors' => 'nullable|array',
+            'publication_year' => 'nullable|integer|min:1900|max:' . date('Y'),
         ]);
 
-        $document->update([
-            'title' => $request->title,
-            'abstract' => $request->abstract,
-            'description' => $request->description,
-            'keywords' => $request->keywords,
-        ]);
+        $document->update($validated);
 
-        return redirect()->back()->with('success', 'Manuscript updated successfully!');
+        return redirect()->route('student.my-manuscripts')
+            ->with('success', 'Manuscript updated successfully.');
     }
 
     /**
-     * Submit manuscript for review.
+     * Submit a manuscript for review.
      */
     public function submitForReview($id)
     {
-        $document = Document::where('user_id', Auth::id())
+        $document = Document::where('user_id', auth()->id())
             ->findOrFail($id);
 
-        if ($document->status !== 'draft') {
-            return redirect()->back()->with('error', 'Only draft manuscripts can be submitted for review.');
+        // Only allow submission if status is draft or rejected
+        if (!in_array($document->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'This document cannot be submitted for review.');
         }
 
-        $document->update([
-            'status' => 'pending_review',
-            'submitted_at' => now(),
-        ]);
+        $document->status = 'pending_review';
+        $document->submitted_at = now();
+        $document->save();
 
-        return redirect()->back()->with('success', 'Manuscript submitted for review successfully!');
+        // TODO: Send notification to faculty reviewers
+
+        return back()->with('success', 'Document submitted for review successfully.');
     }
 
     /**
-     * Delete the specified manuscript.
+     * Delete a manuscript.
      */
     public function destroy($id)
     {
-        $document = Document::where('user_id', Auth::id())
+        $document = Document::where('user_id', auth()->id())
             ->findOrFail($id);
 
-        // Delete file from storage
+        // Only allow deletion if status is draft or rejected
+        if (!in_array($document->status, ['draft', 'rejected'])) {
+            return back()->with('error', 'This document cannot be deleted in its current status.');
+        }
+
+        // Delete the file
         if ($document->file_path && \Storage::disk('public')->exists($document->file_path)) {
             \Storage::disk('public')->delete($document->file_path);
         }
 
         $document->delete();
 
-        return redirect()->route('student.my-manuscripts')
-            ->with('success', 'Manuscript deleted successfully!');
+        return back()->with('success', 'Document deleted successfully.');
     }
 
     /**
-     * Get manuscript analytics.
+     * Show analytics for a manuscript.
      */
     public function analytics($id)
     {
-        $document = Document::where('user_id', Auth::id())
-            ->with(['collaborators', 'reviewer'])
+        $document = Document::where('user_id', auth()->id())
             ->findOrFail($id);
-
-        // Get weekly views data
-        $weeklyViews = [
-            'Mon' => rand(10, 100),
-            'Tue' => rand(10, 100),
-            'Wed' => rand(10, 100),
-            'Thu' => rand(10, 100),
-            'Fri' => rand(10, 100),
-            'Sat' => rand(5, 50),
-            'Sun' => rand(5, 50),
-        ];
 
         return Inertia::render('Student/ManuscriptAnalytics', [
             'document' => $document,
-            'weeklyViews' => $weeklyViews,
         ]);
     }
 }

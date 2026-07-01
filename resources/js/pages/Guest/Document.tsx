@@ -1,29 +1,20 @@
 // resources/js/Pages/Guest/Document.tsx
 
-import React, { useEffect, useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import Header from '@/components/Header';
 import {
-    BookOpen,
-    Search,
-    Shield,
-    Clock,
-    ArrowRight,
-    ChevronDown,
     FileText,
-    Users,
-    Database,
-    Award,
-    Menu,
-    X,
-    Download,
+    Search,
     Eye,
+    Download,
     Calendar,
     User,
     Tag,
-    ChevronLeft,
-    Filter,
     Grid,
     List,
+    CheckCircle,
+    Archive,
 } from 'lucide-react';
 
 // Custom CSS for luxury/editorial styles
@@ -32,11 +23,6 @@ const luxuryStyles = `
 
   .font-playfair {
     font-family: 'Playfair Display', serif;
-  }
-
-  .writing-mode-vertical {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
   }
 
   .noise-overlay {
@@ -90,17 +76,51 @@ interface Document {
     views: number;
     downloads: number;
     tags: string[];
+    status: string;
+    file_path: string | null;
+    file_name: string | null;
+    mime_type: string | null;
+    student_name: string | null;
+    verified_at: string | null;
 }
 
-const GuestDocument: React.FC = () => {
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+interface GuestDocumentProps {
+    documents: {
+        data: Document[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
+    stats: {
+        total: number;
+        verified: number;
+        archived: number;
+    };
+    years: number[];
+    filters: {
+        search: string;
+        year: string;
+        sort: string;
+    };
+}
+
+const GuestDocument: React.FC<GuestDocumentProps> = ({
+    documents,
+    stats,
+    years,
+    filters: initialFilters,
+}) => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedType, setSelectedType] = useState<string>('all');
-    const [selectedYear, setSelectedYear] = useState<string>('all');
+    const [searchTerm, setSearchTerm] = useState(initialFilters.search || '');
+    const [selectedYear, setSelectedYear] = useState<string>(
+        initialFilters.year || 'all',
+    );
+    const [sortBy, setSortBy] = useState<string>(
+        initialFilters.sort || 'latest',
+    );
 
     useEffect(() => {
-        // Inject custom styles
         const styleElement = document.createElement('style');
         styleElement.textContent = luxuryStyles;
         document.head.appendChild(styleElement);
@@ -110,189 +130,75 @@ const GuestDocument: React.FC = () => {
         };
     }, []);
 
-    // Mock data - replace with actual API data
-    const documents: Document[] = [
-        {
-            id: 1,
-            title: 'AI-Powered Learning Management System for Higher Education',
-            authors: ['Maria Santos', 'John Cruz'],
-            abstract:
-                'This study explores the implementation of artificial intelligence in learning management systems to personalize student learning experiences.',
-            type: 'Capstone Project',
-            department: 'Computer Science',
-            year: 2024,
-            views: 1245,
-            downloads: 342,
-            tags: ['AI', 'LMS', 'Education Technology'],
-        },
-        {
-            id: 2,
-            title: 'Blockchain Technology for Secure Academic Credentials',
-            authors: ['Anna Reyes', 'James Wilson'],
-            abstract:
-                'A comprehensive analysis of blockchain implementation for tamper-proof academic credential verification and storage.',
-            type: 'Research Paper',
-            department: 'Information Technology',
-            year: 2023,
-            views: 892,
-            downloads: 267,
-            tags: ['Blockchain', 'Security', 'Credentials'],
-        },
-        {
-            id: 3,
-            title: 'Sustainable Architecture: Green Building Design Principles',
-            authors: ['Arch. Michael Tan', 'Lisa Garcia'],
-            abstract:
-                'An examination of sustainable design principles and their application in modern architecture for energy efficiency.',
-            type: 'Thesis',
-            department: 'Architecture',
-            year: 2024,
-            views: 567,
-            downloads: 189,
-            tags: ['Architecture', 'Sustainability', 'Green Design'],
-        },
-        {
-            id: 4,
-            title: 'Data Analytics for Business Intelligence',
-            authors: ['Robert Chen', 'Patricia Lim'],
-            abstract:
-                'This research presents data analytics frameworks for enhancing business intelligence and decision-making processes.',
-            type: 'Research Paper',
-            department: 'Business Administration',
-            year: 2023,
-            views: 734,
-            downloads: 245,
-            tags: ['Data Analytics', 'Business Intelligence', 'Big Data'],
-        },
-    ];
+    const applyFilters = () => {
+        router.get(
+            '/guest/documents',
+            {
+                search: searchTerm,
+                year: selectedYear,
+                sort: sortBy,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+    };
 
-    const documentTypes = ['all', ...new Set(documents.map((doc) => doc.type))];
-    const years = [
-        'all',
-        ...new Set(documents.map((doc) => doc.year.toString())),
-    ];
+    const resetFilters = () => {
+        setSearchTerm('');
+        setSelectedYear('all');
+        setSortBy('latest');
+        router.get('/guest/documents', {}, { preserveState: true });
+    };
 
-    const filteredDocuments = documents.filter((doc) => {
-        const matchesSearch =
-            doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doc.authors.some((author) =>
-                author.toLowerCase().includes(searchTerm.toLowerCase()),
-            ) ||
-            doc.abstract.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = selectedType === 'all' || doc.type === selectedType;
-        const matchesYear =
-            selectedYear === 'all' || doc.year.toString() === selectedYear;
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        applyFilters();
+    };
 
-        return matchesSearch && matchesType && matchesYear;
-    });
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'verified':
+                return 'text-green-600 bg-green-50 border-green-200';
+            case 'archived':
+                return 'text-blue-600 bg-blue-50 border-blue-200';
+            default:
+                return 'text-gray-600 bg-gray-50 border-gray-200';
+        }
+    };
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'verified':
+                return <CheckCircle className="h-3 w-3" />;
+            case 'archived':
+                return <Archive className="h-3 w-3" />;
+            default:
+                return <FileText className="h-3 w-3" />;
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'verified':
+                return 'Verified';
+            case 'archived':
+                return 'Archived';
+            default:
+                return 'Unknown';
+        }
+    };
+
+    const yearsList = ['all', ...years.map((y) => y.toString())];
 
     return (
         <>
             <Head title="Document Archive - ASC KnowledgeVault" />
 
-            {/* Noise Overlay */}
             <div className="noise-overlay" />
 
-            {/* Navigation */}
-            <nav className="fixed top-0 right-0 left-0 z-50 border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/95 backdrop-blur-sm">
-                <div className="mx-auto max-w-[1600px] px-6 py-5 lg:px-16">
-                    <div className="flex items-center justify-between">
-                        <Link href="/" className="group">
-                            <div className="mb-1 font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
-                                Andres Soriano College of Bislig
-                            </div>
-                            <h2 className="font-playfair text-xl tracking-tight text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37]">
-                                KnowledgeVault
-                            </h2>
-                        </Link>
-
-                        {/* Desktop Navigation */}
-                        <div className="hidden items-center gap-10 md:flex">
-                            <Link
-                                href="/"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                Home
-                            </Link>
-                            <Link
-                                href="/guest/documents"
-                                className="font-sans text-sm text-[#D4AF37] transition-colors duration-500"
-                            >
-                                Archive
-                            </Link>
-                            <a
-                                href="#about"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                About
-                            </a>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/login"
-                                className="group relative hidden h-11 items-center overflow-hidden bg-[#1A1A1A] px-6 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] md:flex"
-                            >
-                                <span className="absolute inset-0 translate-x-[-100%] bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
-                                <span className="relative z-10 font-sans text-[11px] font-medium tracking-[0.2em] text-white uppercase">
-                                    Access Vault
-                                </span>
-                            </Link>
-
-                            {/* Mobile Menu Button */}
-                            <button
-                                onClick={() =>
-                                    setMobileMenuOpen(!mobileMenuOpen)
-                                }
-                                className="p-2 text-[#1A1A1A] md:hidden"
-                            >
-                                {mobileMenuOpen ? (
-                                    <X className="h-6 w-6" />
-                                ) : (
-                                    <Menu className="h-6 w-6" />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Mobile Menu */}
-                    {mobileMenuOpen && (
-                        <div className="mt-6 space-y-4 border-t border-[#1A1A1A]/10 pt-6 md:hidden">
-                            <Link
-                                href="/"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Home
-                            </Link>
-                            <Link
-                                href="/guest/documents"
-                                className="block font-sans text-sm text-[#D4AF37] transition-colors duration-500"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Archive
-                            </Link>
-                            <a
-                                href="#about"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                About
-                            </a>
-                            <Link
-                                href="/login"
-                                className="group relative inline-block h-11 overflow-hidden bg-[#1A1A1A] px-6 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                <span className="absolute inset-0 translate-x-[-100%] bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
-                                <span className="relative z-10 font-sans text-[11px] font-medium tracking-[0.2em] text-white uppercase">
-                                    Access Vault
-                                </span>
-                            </Link>
-                        </div>
-                    )}
-                </div>
-            </nav>
+            <Header />
 
             <main className="z-20 pt-32">
                 {/* Hero Section */}
@@ -316,10 +222,15 @@ const GuestDocument: React.FC = () => {
                                 <div className="mt-6 h-px w-20 bg-[#1A1A1A]/20" />
                                 <p className="mt-6 max-w-2xl font-sans text-base leading-relaxed text-[#6C6863]">
                                     Explore our comprehensive collection of
-                                    capstone projects, research papers, and
-                                    academic theses from Andres Soriano College
-                                    of Bislig.
+                                    verified and archived final papers from
+                                    Andres Soriano College of Bislig.
                                 </p>
+                                <div className="mt-4 flex flex-wrap gap-6 text-sm text-[#6C6863]">
+                                    <span className="flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-[#D4AF37]" />
+                                        {stats.total} Documents
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -333,44 +244,31 @@ const GuestDocument: React.FC = () => {
                                 {/* Search Bar */}
                                 <div className="relative mb-6">
                                     <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-[#6C6863]" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search by title, author, or keywords..."
-                                        value={searchTerm}
-                                        onChange={(e) =>
-                                            setSearchTerm(e.target.value)
-                                        }
-                                        className="h-12 w-full border border-[#1A1A1A]/20 bg-transparent pr-4 pl-12 font-sans text-sm text-[#1A1A1A] placeholder:text-[#6C6863]/50 focus:border-[#D4AF37] focus:outline-none"
-                                    />
+                                    <form onSubmit={handleSearch}>
+                                        <input
+                                            type="text"
+                                            placeholder="Search by title, author, or keywords..."
+                                            value={searchTerm}
+                                            onChange={(e) =>
+                                                setSearchTerm(e.target.value)
+                                            }
+                                            className="h-12 w-full border border-[#1A1A1A]/20 bg-transparent pr-4 pl-12 font-sans text-sm text-[#1A1A1A] placeholder:text-[#6C6863]/50 focus:border-[#D4AF37] focus:outline-none"
+                                        />
+                                    </form>
                                 </div>
 
                                 {/* Filters */}
                                 <div className="flex flex-wrap items-center justify-between gap-4">
                                     <div className="flex flex-wrap gap-3">
                                         <select
-                                            value={selectedType}
-                                            onChange={(e) =>
-                                                setSelectedType(e.target.value)
-                                            }
-                                            className="h-9 border border-[#1A1A1A]/20 bg-transparent px-3 font-sans text-xs text-[#1A1A1A] focus:border-[#D4AF37] focus:outline-none"
-                                        >
-                                            {documentTypes.map((type) => (
-                                                <option key={type} value={type}>
-                                                    {type === 'all'
-                                                        ? 'All Types'
-                                                        : type}
-                                                </option>
-                                            ))}
-                                        </select>
-
-                                        <select
                                             value={selectedYear}
-                                            onChange={(e) =>
-                                                setSelectedYear(e.target.value)
-                                            }
+                                            onChange={(e) => {
+                                                setSelectedYear(e.target.value);
+                                                applyFilters();
+                                            }}
                                             className="h-9 border border-[#1A1A1A]/20 bg-transparent px-3 font-sans text-xs text-[#1A1A1A] focus:border-[#D4AF37] focus:outline-none"
                                         >
-                                            {years.map((year) => (
+                                            {yearsList.map((year) => (
                                                 <option key={year} value={year}>
                                                     {year === 'all'
                                                         ? 'All Years'
@@ -378,12 +276,28 @@ const GuestDocument: React.FC = () => {
                                                 </option>
                                             ))}
                                         </select>
+
+                                        <select
+                                            value={sortBy}
+                                            onChange={(e) => {
+                                                setSortBy(e.target.value);
+                                                applyFilters();
+                                            }}
+                                            className="h-9 border border-[#1A1A1A]/20 bg-transparent px-3 font-sans text-xs text-[#1A1A1A] focus:border-[#D4AF37] focus:outline-none"
+                                        >
+                                            <option value="latest">
+                                                Latest First
+                                            </option>
+                                            <option value="oldest">
+                                                Oldest First
+                                            </option>
+                                        </select>
                                     </div>
 
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => setViewMode('grid')}
-                                            className={`p-2 transition-colors duration-500 ${
+                                            className={`rounded p-2 transition-colors duration-500 ${
                                                 viewMode === 'grid'
                                                     ? 'bg-[#1A1A1A] text-white'
                                                     : 'border border-[#1A1A1A]/20 text-[#1A1A1A] hover:border-[#D4AF37]'
@@ -393,7 +307,7 @@ const GuestDocument: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => setViewMode('list')}
-                                            className={`p-2 transition-colors duration-500 ${
+                                            className={`rounded p-2 transition-colors duration-500 ${
                                                 viewMode === 'list'
                                                     ? 'bg-[#1A1A1A] text-white'
                                                     : 'border border-[#1A1A1A]/20 text-[#1A1A1A] hover:border-[#D4AF37]'
@@ -413,7 +327,7 @@ const GuestDocument: React.FC = () => {
                     <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
                         <div className="grid gap-6 lg:grid-cols-12">
                             <div className="lg:col-span-10 lg:col-start-2">
-                                {filteredDocuments.length === 0 ? (
+                                {documents.data.length === 0 ? (
                                     <div className="py-20 text-center">
                                         <FileText className="mx-auto h-12 w-12 text-[#6C6863]/30" />
                                         <p className="mt-4 font-sans text-sm text-[#6C6863]">
@@ -423,36 +337,65 @@ const GuestDocument: React.FC = () => {
                                     </div>
                                 ) : viewMode === 'grid' ? (
                                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                        {filteredDocuments.map((doc) => (
+                                        {documents.data.map((doc) => (
                                             <div
                                                 key={doc.id}
                                                 className="group border border-[#1A1A1A]/10 bg-white p-6 transition-all duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
                                             >
-                                                <FileText className="mb-4 h-10 w-10 text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37]" />
-                                                <h3 className="font-playfair mb-2 line-clamp-2 text-xl text-[#1A1A1A]">
-                                                    {doc.title}
-                                                </h3>
+                                                <div className="mb-3 flex items-start justify-between">
+                                                    <FileText className="h-10 w-10 text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37]" />
+                                                    <span
+                                                        className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] ${getStatusBadge(doc.status)}`}
+                                                    >
+                                                        {getStatusIcon(
+                                                            doc.status,
+                                                        )}
+                                                        {getStatusLabel(
+                                                            doc.status,
+                                                        )}
+                                                    </span>
+                                                </div>
+
+                                                <Link
+                                                    href={`/guest/documents/${doc.id}`}
+                                                    className="block"
+                                                >
+                                                    <h3 className="font-playfair mb-2 line-clamp-2 text-xl text-[#1A1A1A] transition-colors duration-500 group-hover:text-[#D4AF37]">
+                                                        {doc.title}
+                                                    </h3>
+                                                </Link>
+
                                                 <div className="mb-3 flex items-center gap-2 text-xs text-[#6C6863]">
                                                     <User className="h-3 w-3" />
                                                     <span>
                                                         {doc.authors.join(', ')}
                                                     </span>
                                                 </div>
+
                                                 <p className="mb-4 line-clamp-3 font-sans text-sm text-[#6C6863]">
                                                     {doc.abstract}
                                                 </p>
+
                                                 <div className="mb-4 flex flex-wrap gap-2">
-                                                    {doc.tags.map(
-                                                        (tag, idx) => (
+                                                    {doc.tags
+                                                        .slice(0, 3)
+                                                        .map((tag, idx) => (
                                                             <span
                                                                 key={idx}
                                                                 className="bg-[#F9F8F6] px-2 py-1 font-sans text-[10px] text-[#6C6863]"
                                                             >
                                                                 {tag}
                                                             </span>
-                                                        ),
+                                                        ))}
+                                                    {doc.tags.length > 3 && (
+                                                        <span className="text-[10px] text-[#6C6863]/60">
+                                                            +
+                                                            {doc.tags.length -
+                                                                3}
+                                                        </span>
                                                     )}
                                                 </div>
+
                                                 <div className="flex items-center justify-between border-t border-[#1A1A1A]/10 pt-4">
                                                     <div className="flex items-center gap-3 text-xs text-[#6C6863]">
                                                         <div className="flex items-center gap-1">
@@ -461,18 +404,12 @@ const GuestDocument: React.FC = () => {
                                                                 {doc.views}
                                                             </span>
                                                         </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <Download className="h-3 w-3" />
-                                                            <span>
-                                                                {doc.downloads}
-                                                            </span>
-                                                        </div>
                                                     </div>
                                                     <Link
-                                                        href={`/documents/${doc.id}`}
+                                                        href={`/guest/documents/${doc.id}`}
                                                         className="font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase transition-colors duration-500 hover:text-[#D4AF37]"
                                                     >
-                                                        View Document →
+                                                        View →
                                                     </Link>
                                                 </div>
                                             </div>
@@ -480,7 +417,7 @@ const GuestDocument: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {filteredDocuments.map((doc) => (
+                                        {documents.data.map((doc) => (
                                             <div
                                                 key={doc.id}
                                                 className="group flex flex-col gap-4 border-b border-[#1A1A1A]/10 pb-6 transition-all duration-500 hover:border-[#D4AF37]/30 md:flex-row md:items-start"
@@ -503,9 +440,18 @@ const GuestDocument: React.FC = () => {
                                                             )}
                                                         </span>
                                                         <span>•</span>
-                                                        <span>{doc.type}</span>
-                                                        <span>•</span>
                                                         <span>{doc.year}</span>
+                                                        <span>•</span>
+                                                        <span
+                                                            className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] ${getStatusBadge(doc.status)}`}
+                                                        >
+                                                            {getStatusIcon(
+                                                                doc.status,
+                                                            )}
+                                                            {getStatusLabel(
+                                                                doc.status,
+                                                            )}
+                                                        </span>
                                                     </div>
                                                     <p className="mt-2 line-clamp-2 font-sans text-sm text-[#6C6863]">
                                                         {doc.abstract}
@@ -521,6 +467,14 @@ const GuestDocument: React.FC = () => {
                                                                     {tag}
                                                                 </span>
                                                             ))}
+                                                        {doc.tags.length >
+                                                            3 && (
+                                                            <span className="text-[10px] text-[#6C6863]/60">
+                                                                +
+                                                                {doc.tags
+                                                                    .length - 3}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-shrink-0 items-center gap-4 md:flex-col md:items-end">
@@ -539,98 +493,69 @@ const GuestDocument: React.FC = () => {
                                         ))}
                                     </div>
                                 )}
+
+                                {/* Pagination */}
+                                {documents.last_page > 1 && (
+                                    <div className="mt-8 flex items-center justify-between">
+                                        <p className="font-sans text-sm text-[#6C6863]">
+                                            Showing {documents.data.length} of{' '}
+                                            {documents.total} documents
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() =>
+                                                    router.get(
+                                                        '/guest/documents',
+                                                        {
+                                                            page:
+                                                                documents.current_page -
+                                                                1,
+                                                            search: searchTerm,
+                                                            year: selectedYear,
+                                                            sort: sortBy,
+                                                        },
+                                                    )
+                                                }
+                                                disabled={
+                                                    documents.current_page === 1
+                                                }
+                                                className="rounded border border-[#1A1A1A]/20 px-3 py-1 text-sm transition-colors hover:border-[#D4AF37] disabled:opacity-50"
+                                            >
+                                                Previous
+                                            </button>
+                                            <span className="flex items-center px-3 font-sans text-sm text-[#1A1A1A]">
+                                                Page {documents.current_page} of{' '}
+                                                {documents.last_page}
+                                            </span>
+                                            <button
+                                                onClick={() =>
+                                                    router.get(
+                                                        '/guest/documents',
+                                                        {
+                                                            page:
+                                                                documents.current_page +
+                                                                1,
+                                                            search: searchTerm,
+                                                            year: selectedYear,
+                                                            sort: sortBy,
+                                                        },
+                                                    )
+                                                }
+                                                disabled={
+                                                    documents.current_page ===
+                                                    documents.last_page
+                                                }
+                                                className="rounded border border-[#1A1A1A]/20 px-3 py-1 text-sm transition-colors hover:border-[#D4AF37] disabled:opacity-50"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 </section>
-
-                {/* Footer */}
-                <footer className="border-t border-[#1A1A1A]/10 bg-[#F9F8F6] py-12">
-                    <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
-                        <div className="grid gap-10 md:grid-cols-4">
-                            <div className="md:col-span-2">
-                                <div className="mb-1 font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
-                                    Andres Soriano College of Bislig
-                                </div>
-                                <h3 className="font-playfair mb-3 text-xl text-[#1A1A1A]">
-                                    KnowledgeVault
-                                </h3>
-                                <p className="max-w-md font-sans text-sm leading-relaxed text-[#6C6863]">
-                                    Preserving academic excellence through
-                                    sophisticated document management and
-                                    archiving.
-                                </p>
-                            </div>
-                            <div>
-                                <h4 className="mb-3 font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase">
-                                    Quick Links
-                                </h4>
-                                <ul className="space-y-2">
-                                    <li>
-                                        <Link
-                                            href="/"
-                                            className="font-sans text-sm text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                        >
-                                            Home
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            href="/guest/documents"
-                                            className="font-sans text-sm text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                        >
-                                            Archive
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            href="/login"
-                                            className="font-sans text-sm text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                        >
-                                            Access Vault
-                                        </Link>
-                                    </li>
-                                </ul>
-                            </div>
-                            <div>
-                                <h4 className="mb-3 font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase">
-                                    Legal
-                                </h4>
-                                <ul className="space-y-2">
-                                    <li>
-                                        <a
-                                            href="#"
-                                            className="font-sans text-sm text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                        >
-                                            Privacy Policy
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            href="#"
-                                            className="font-sans text-sm text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                        >
-                                            Terms of Use
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            href="#"
-                                            className="font-sans text-sm text-[#6C6863] transition-colors duration-500 hover:text-[#D4AF37]"
-                                        >
-                                            Data Security
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div className="mt-10 border-t border-[#1A1A1A]/10 pt-6 text-center">
-                            <div className="font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
-                                © 2025 ASC KnowledgeVault — Capstone Project
-                            </div>
-                        </div>
-                    </div>
-                </footer>
             </main>
         </>
     );

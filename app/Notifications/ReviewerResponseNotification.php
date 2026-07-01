@@ -63,7 +63,7 @@ class ReviewerResponseNotification extends Notification
             'reviewer_name' => $this->reviewer->name,
             'feedback' => $this->feedback,
             'message' => "{$this->reviewer->name} {$this->status} your manuscript: {$this->document->title}",
-            'action_url' => "/documents/{$this->document->id}",
+            'action_url' => "/student/my-manuscripts/{$this->document->id}",
             'action_text' => 'View Response',
         ];
     }

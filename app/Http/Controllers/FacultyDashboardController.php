@@ -4,6 +4,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\FinalDocument;
 use App\Models\User;
 use App\Models\Invitation;
 use Illuminate\Http\Request;
@@ -37,6 +38,11 @@ class FacultyDashboardController extends Controller
                 ->count(),
             'total_reviews' => Document::where('reviewer_id', $user->id)->count(),
             'avg_response_time' => $this->getAverageResponseTime($user->id),
+            // Add final submission stats
+            'pending_final_submissions' => FinalDocument::where('status', 'pending')->count(),
+            'verified_final_submissions' => FinalDocument::where('status', 'verified')->count(),
+            'archived_final_submissions' => FinalDocument::where('status', 'archived')->count(),
+            'total_final_submissions' => FinalDocument::count(),
         ];
 
         // Get pending reviews (documents assigned to this faculty)
@@ -54,6 +60,23 @@ class FacultyDashboardController extends Controller
                     'author_email' => $doc->user->email,
                     'submitted_at' => $doc->submitted_at?->diffForHumans() ?? $doc->created_at->diffForHumans(),
                     'status' => $doc->status,
+                ];
+            });
+
+        // Get pending final submissions
+        $pendingFinalSubmissions = FinalDocument::with(['document.user', 'student'])
+            ->where('status', 'pending')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($finalDoc) {
+                return [
+                    'id' => $finalDoc->id,
+                    'title' => $finalDoc->document->title,
+                    'student' => $finalDoc->student->name,
+                    'student_email' => $finalDoc->student->email,
+                    'submitted_at' => $finalDoc->submitted_at->diffForHumans(),
+                    'status' => $finalDoc->status,
                 ];
             });
 
@@ -75,8 +98,44 @@ class FacultyDashboardController extends Controller
                 ];
             });
 
-        // Get recent activity
-        $recentActivity = Document::where('reviewer_id', $user->id)
+        // Get recent final submissions (verified/archived)
+        $recentFinalSubmissions = FinalDocument::with(['document.user', 'student', 'verifiedBy'])
+            ->whereIn('status', ['verified', 'archived'])
+            ->latest('verified_at')
+            ->limit(5)
+            ->get()
+            ->map(function ($finalDoc) {
+                return [
+                    'id' => $finalDoc->id,
+                    'title' => $finalDoc->document->title,
+                    'student' => $finalDoc->student->name,
+                    'verified_at' => $finalDoc->verified_at?->diffForHumans(),
+                    'status' => $finalDoc->status,
+                    'verified_by' => $finalDoc->verifiedBy?->name,
+                ];
+            });
+
+        // Get recent activity (combine both document reviews and final submissions)
+        $recentActivity = $this->getRecentActivity($user->id);
+
+        return Inertia::render('Faculty/Dashboard', [
+            'user' => $user,
+            'stats' => $stats,
+            'pendingReviews' => $pendingReviews,
+            'pendingFinalSubmissions' => $pendingFinalSubmissions,
+            'recentlyReviewed' => $recentlyReviewed,
+            'recentFinalSubmissions' => $recentFinalSubmissions,
+            'recentActivity' => $recentActivity,
+        ]);
+    }
+
+    /**
+     * Get recent activity combining document reviews and final submissions
+     */
+    private function getRecentActivity($facultyId)
+    {
+        // Get document review activities
+        $documentActivities = Document::where('reviewer_id', $facultyId)
             ->latest()
             ->limit(10)
             ->get()
@@ -90,13 +149,29 @@ class FacultyDashboardController extends Controller
                 ];
             });
 
-        return Inertia::render('Faculty/Dashboard', [
-            'user' => $user,
-            'stats' => $stats,
-            'pendingReviews' => $pendingReviews,
-            'recentlyReviewed' => $recentlyReviewed,
-            'recentActivity' => $recentActivity,
-        ]);
+        // Get final submission activities
+        $finalActivities = FinalDocument::whereIn('status', ['verified', 'archived'])
+            ->latest('verified_at')
+            ->limit(10)
+            ->get()
+            ->map(function ($finalDoc) {
+                return [
+                    'type' => 'final_submission',
+                    'action' => $finalDoc->status === 'verified' ? 'verified final paper' : 'archived final paper',
+                    'title' => $finalDoc->document->title,
+                    'date' => $finalDoc->verified_at?->diffForHumans() ?? $finalDoc->updated_at->diffForHumans(),
+                    'status' => $finalDoc->status,
+                    'student' => $finalDoc->student->name,
+                ];
+            });
+
+        // Merge and sort by date
+        $activities = $documentActivities->merge($finalActivities)
+            ->sortByDesc('date')
+            ->take(10)
+            ->values();
+
+        return $activities;
     }
 
     /**
@@ -172,7 +247,14 @@ class FacultyDashboardController extends Controller
 
         // Send notification to student
         $student = User::find($document->user_id);
-        $student->notify(new \App\Notifications\ReviewerResponseNotification($document, Auth::user(), $request->status, $request->feedback));
+        if ($student) {
+            $student->notify(new \App\Notifications\ReviewerResponseNotification(
+                $document,
+                Auth::user(),
+                $request->status,
+                $request->feedback
+            ));
+        }
 
         return redirect()->route('faculty.dashboard')
             ->with('success', 'Review submitted successfully!');

@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Document extends Model
 {
@@ -79,6 +80,29 @@ class Document extends Model
         return $this->belongsTo(User::class, 'reviewer_id');
     }
 
+    /**
+     * Get the final submission record for this document.
+     */
+    public function finalSubmission(): HasOne
+    {
+        return $this->hasOne(FinalDocument::class);
+    }
+
+    /**
+     * Check if the document has been submitted as a final paper.
+     */
+    public function hasFinalSubmission(): bool
+    {
+        return $this->finalSubmission()->exists();
+    }
+
+    /**
+     * Get the final submission status.
+     */
+    public function getFinalSubmissionStatusAttribute(): ?string
+    {
+        return $this->finalSubmission?->status;
+    }
 
     /**
      * Scope for documents pending review

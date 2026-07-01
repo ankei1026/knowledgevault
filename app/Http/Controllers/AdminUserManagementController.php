@@ -184,4 +184,19 @@ class AdminUserManagementController extends Controller
 
         return redirect()->back()->with('success', 'Export started.');
     }
+
+    public function resetPassword(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back()->with('success', "Password for {$user->name} has been reset successfully.");
+    }
 }

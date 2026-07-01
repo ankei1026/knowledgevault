@@ -15,7 +15,7 @@ import {
 
 const Register: React.FC = () => {
     const { errors: pageErrors } = usePage().props as any;
-    
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -30,7 +30,7 @@ const Register: React.FC = () => {
 
     const roles = [
         { value: 'student', label: 'Student Researcher' },
-        { value: 'faculty', label: 'Faculty Member' },
+        // { value: 'faculty', label: 'Faculty Member' },
     ];
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -64,10 +64,10 @@ const Register: React.FC = () => {
                 {/* Visible Grid Lines */}
                 <div className="pointer-events-none fixed inset-0 z-0 hidden lg:block">
                     <div className="relative mx-auto h-full max-w-[1600px] px-16">
-                        <div className="absolute left-0 top-0 h-full w-px bg-[#1A1A1A]/20" />
-                        <div className="absolute left-1/3 top-0 h-full w-px bg-[#1A1A1A]/20" />
-                        <div className="absolute left-2/3 top-0 h-full w-px bg-[#1A1A1A]/20" />
-                        <div className="absolute right-0 top-0 h-full w-px bg-[#1A1A1A]/20" />
+                        <div className="absolute top-0 left-0 h-full w-px bg-[#1A1A1A]/20" />
+                        <div className="absolute top-0 left-1/3 h-full w-px bg-[#1A1A1A]/20" />
+                        <div className="absolute top-0 left-2/3 h-full w-px bg-[#1A1A1A]/20" />
+                        <div className="absolute top-0 right-0 h-full w-px bg-[#1A1A1A]/20" />
                     </div>
                 </div>
 
@@ -77,7 +77,7 @@ const Register: React.FC = () => {
                         <div className="mb-4 flex justify-center">
                             <div className="h-px w-12 bg-[#D4AF37]" />
                         </div>
-                        <h1 className="mb-2 font-playfair text-4xl text-[#1A1A1A]">
+                        <h1 className="font-playfair mb-2 text-4xl text-[#1A1A1A]">
                             Join the Archive
                         </h1>
                         <p className="font-sans text-sm text-[#6C6863]">
@@ -88,11 +88,11 @@ const Register: React.FC = () => {
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="mb-2 block font-sans text-[11px] uppercase tracking-[0.2em] text-[#1A1A1A]">
+                            <label className="mb-2 block font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase">
                                 Full Name
                             </label>
                             <div className="relative">
-                                <User className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
+                                <User className="absolute top-1/2 left-0 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                                 <input
                                     type="text"
                                     value={formData.name}
@@ -115,11 +115,11 @@ const Register: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="mb-2 block font-sans text-[11px] uppercase tracking-[0.2em] text-[#1A1A1A]">
+                            <label className="mb-2 block font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase">
                                 Email Address
                             </label>
                             <div className="relative">
-                                <Mail className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
+                                <Mail className="absolute top-1/2 left-0 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                                 <input
                                     type="email"
                                     value={formData.email}
@@ -142,11 +142,11 @@ const Register: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="mb-2 block font-sans text-[11px] uppercase tracking-[0.2em] text-[#1A1A1A]">
+                            <label className="mb-2 block font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase">
                                 Role
                             </label>
                             <div className="relative">
-                                <Briefcase className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
+                                <Briefcase className="absolute top-1/2 left-0 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                                 <select
                                     value={formData.role}
                                     onChange={(e) =>
@@ -171,11 +171,11 @@ const Register: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="mb-2 block font-sans text-[11px] uppercase tracking-[0.2em] text-[#1A1A1A]">
+                            <label className="mb-2 block font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase">
                                 Password
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
+                                <Lock className="absolute top-1/2 left-0 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={formData.password}
@@ -194,7 +194,7 @@ const Register: React.FC = () => {
                                     onClick={() =>
                                         setShowPassword(!showPassword)
                                     }
-                                    className="absolute right-0 top-1/2 -translate-y-1/2"
+                                    className="absolute top-1/2 right-0 -translate-y-1/2"
                                 >
                                     {showPassword ? (
                                         <EyeOff className="h-4 w-4 text-[#6C6863]" />
@@ -211,11 +211,11 @@ const Register: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="mb-2 block font-sans text-[11px] uppercase tracking-[0.2em] text-[#1A1A1A]">
+                            <label className="mb-2 block font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase">
                                 Confirm Password
                             </label>
                             <div className="relative">
-                                <Lock className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
+                                <Lock className="absolute top-1/2 left-0 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                                 <input
                                     type={
                                         showConfirmPassword
@@ -241,7 +241,7 @@ const Register: React.FC = () => {
                                             !showConfirmPassword,
                                         )
                                     }
-                                    className="absolute right-0 top-1/2 -translate-y-1/2"
+                                    className="absolute top-1/2 right-0 -translate-y-1/2"
                                 >
                                     {showConfirmPassword ? (
                                         <EyeOff className="h-4 w-4 text-[#6C6863]" />
@@ -258,7 +258,7 @@ const Register: React.FC = () => {
                             className="group relative mt-6 h-12 w-full overflow-hidden bg-[#1A1A1A] transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
-                            <span className="relative z-10 flex items-center justify-center gap-2 font-sans text-xs font-medium uppercase tracking-[0.2em] text-white">
+                            <span className="relative z-10 flex items-center justify-center gap-2 font-sans text-xs font-medium tracking-[0.2em] text-white uppercase">
                                 {loading
                                     ? 'Creating Account...'
                                     : 'Create Account'}
@@ -284,7 +284,7 @@ const Register: React.FC = () => {
                         href="/login"
                         className="group flex h-12 w-full items-center justify-center gap-2 border border-[#1A1A1A] transition-all duration-500 hover:bg-[#1A1A1A]"
                     >
-                        <span className="font-sans text-xs uppercase tracking-[0.2em] text-[#1A1A1A] transition-colors duration-500 group-hover:text-white">
+                        <span className="font-sans text-xs tracking-[0.2em] text-[#1A1A1A] uppercase transition-colors duration-500 group-hover:text-white">
                             Sign In
                         </span>
                         <ArrowRight className="h-3 w-3 text-[#1A1A1A] transition-colors duration-500 group-hover:text-white" />

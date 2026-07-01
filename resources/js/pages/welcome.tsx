@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import Header from '@/components/Header';
 import {
     BookOpen,
     Search,
@@ -13,12 +14,7 @@ import {
     Users,
     Database,
     Award,
-    Menu,
-    X,
     User,
-    Github,
-    Linkedin,
-    Mail,
 } from 'lucide-react';
 
 // Custom CSS for luxury/editorial styles that complement shadcn
@@ -27,11 +23,6 @@ const luxuryStyles = `
 
   .font-playfair {
     font-family: 'Playfair Display', serif;
-  }
-
-  .writing-mode-vertical {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
   }
 
   .noise-overlay {
@@ -103,7 +94,6 @@ interface TeamMember {
 
 const Welcome: React.FC = () => {
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         // Inject custom styles
@@ -206,152 +196,16 @@ const Welcome: React.FC = () => {
             {/* Noise Overlay */}
             <div className="noise-overlay" />
 
-            {/* Navigation */}
-            <nav className="fixed top-0 right-0 left-0 z-50 border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/95 backdrop-blur-sm">
-                <div className="mx-auto max-w-[1600px] px-6 py-5 lg:px-16">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="mb-1 font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
-                                Andres Soriano College of Bislig
-                            </div>
-                            <h2 className="font-playfair text-xl tracking-tight text-[#1A1A1A]">
-                                KnowledgeVault
-                            </h2>
-                        </div>
-
-                        {/* Desktop Navigation */}
-                        <div className="hidden items-center gap-10 md:flex">
-                            <a
-                                href="#features"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                Features
-                            </a>
-                            <a
-                                href="#about"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                About
-                            </a>
-                            <a
-                                href="#team"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                Team
-                            </a>
-                            <a
-                                href="#stats"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                Impact
-                            </a>
-                            <a
-                                href="#faq"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                FAQ
-                            </a>
-                            <Link
-                                href="/guest/documents"
-                                className="font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                            >
-                                Archive
-                            </Link>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/login"
-                                className="group relative hidden h-11 items-center overflow-hidden bg-[#1A1A1A] px-6 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)] md:flex"
-                            >
-                                <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
-                                <span className="relative z-10 font-sans text-[11px] font-medium tracking-[0.2em] text-white uppercase">
-                                    Access Vault
-                                </span>
-                            </Link>
-
-                            {/* Mobile Menu Button */}
-                            <button
-                                onClick={() =>
-                                    setMobileMenuOpen(!mobileMenuOpen)
-                                }
-                                className="p-2 text-[#1A1A1A] md:hidden"
-                            >
-                                {mobileMenuOpen ? (
-                                    <X className="h-6 w-6" />
-                                ) : (
-                                    <Menu className="h-6 w-6" />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Mobile Menu */}
-                    {mobileMenuOpen && (
-                        <div className="mt-6 space-y-4 border-t border-[#1A1A1A]/10 pt-6 md:hidden">
-                            <a
-                                href="#features"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Features
-                            </a>
-                            <a
-                                href="#about"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                About
-                            </a>
-                            <a
-                                href="#team"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Team
-                            </a>
-                            <a
-                                href="#stats"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Impact
-                            </a>
-                            <a
-                                href="#faq"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                FAQ
-                            </a>
-                            <a
-                                href="/documents"
-                                className="block font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:text-[#D4AF37]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Archive
-                            </a>
-                            <Link
-                                href="/login"
-                                className="group relative inline-block h-11 overflow-hidden bg-[#1A1A1A] px-6 transition-shadow duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
-                                <span className="relative z-10 font-sans text-[11px] font-medium tracking-[0.2em] text-white uppercase">
-                                    Access Vault
-                                </span>
-                            </Link>
-                        </div>
-                    )}
-                </div>
-            </nav>
+            {/* Header Component */}
+            <Header />
 
             <main className="z-20 pt-20">
                 {/* Hero Section */}
                 <section className="relative flex min-h-screen items-center border-b border-[#1A1A1A]/10">
                     <div className="mx-auto w-full max-w-[1600px] px-6 py-16 lg:px-16 lg:py-32">
                         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
-                            <div className="lg:col-span-5 lg:col-start-2">
+                            {/* Left Column - Text */}
+                            <div className="lg:col-span-5">
                                 <div className="mb-6 flex items-center gap-4">
                                     <div className="h-px w-10 bg-[#1A1A1A]/20" />
                                     <span className="font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
@@ -398,6 +252,7 @@ const Welcome: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* Right Column - Image */}
                             <div className="mt-10 lg:col-span-6 lg:col-start-7 lg:mt-0">
                                 <div className="group relative">
                                     <div className="relative overflow-hidden bg-white shadow-[0_12px_48px_rgba(0,0,0,0.15)]">
@@ -421,6 +276,7 @@ const Welcome: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Scroll indicator */}
                     <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 animate-bounce md:block">
                         <ChevronDown className="h-5 w-5 text-[#6C6863]" />
                     </div>
@@ -433,7 +289,7 @@ const Welcome: React.FC = () => {
                 >
                     <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
                         <div className="mb-16 grid gap-10 lg:grid-cols-12 lg:gap-16">
-                            <div className="lg:col-span-10 lg:col-start-2">
+                            <div className="lg:col-span-10">
                                 <div className="mb-5 flex items-center gap-4">
                                     <div className="h-px w-8 bg-[#D4AF37]" />
                                     <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
@@ -530,65 +386,6 @@ const Welcome: React.FC = () => {
                                     </p>
                                 </div>
                             ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* Stats Section - Dark */}
-                <section
-                    id="stats"
-                    className="border-b border-[#1A1A1A]/20 bg-[#1A1A1A] py-20 lg:py-28"
-                >
-                    <div className="mx-auto max-w-[1600px] px-6 lg:px-16">
-                        <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
-                            <div className="lg:col-span-4 lg:col-start-2">
-                                <div className="absolute left-16 hidden xl:block">
-                                    <div className="writing-mode-vertical font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
-                                        Measurable Impact
-                                    </div>
-                                </div>
-                                <div className="mb-5 flex items-center gap-4">
-                                    <div className="h-px w-10 bg-[#D4AF37]" />
-                                    <span className="font-sans text-[10px] tracking-[0.25em] text-[#D4AF37] uppercase">
-                                        By The Numbers
-                                    </span>
-                                </div>
-                                <h2 className="font-playfair text-4xl leading-[1.1] text-[#F9F8F6] md:text-5xl lg:text-6xl">
-                                    Transforming Academic
-                                    <br />
-                                    <span className="text-[#D4AF37] italic">
-                                        Archiving
-                                    </span>
-                                </h2>
-                                <p className="mt-5 font-sans text-base leading-relaxed text-[#EBE5DE]/80">
-                                    Since our launch, ASC KnowledgeVault has
-                                    become the central repository for academic
-                                    research at Andres Soriano College of
-                                    Bislig.
-                                </p>
-                            </div>
-
-                            <div className="lg:col-span-5 lg:col-start-7">
-                                <div className="grid grid-cols-2 gap-6 lg:gap-10">
-                                    {stats.map((stat, index) => {
-                                        const Icon = stat.icon;
-                                        return (
-                                            <div
-                                                key={index}
-                                                className="border-t border-[#D4AF37]/30 pt-5"
-                                            >
-                                                <Icon className="mb-3 h-7 w-7 text-[#D4AF37]" />
-                                                <div className="font-playfair mb-1 text-3xl text-[#F9F8F6] lg:text-4xl">
-                                                    {stat.value}
-                                                </div>
-                                                <div className="font-sans text-[11px] tracking-[0.2em] text-[#EBE5DE]/60 uppercase">
-                                                    {stat.label}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -766,7 +563,7 @@ const Welcome: React.FC = () => {
                         </div>
                         <div className="mt-10 border-t border-[#1A1A1A]/10 pt-6 text-center">
                             <div className="font-sans text-[10px] tracking-[0.25em] text-[#6C6863] uppercase">
-                                © 2025 ASC KnowledgeVault — Capstone Project
+                                © 2026 ASC KnowledgeVault — Capstone Project
                             </div>
                         </div>
                     </div>

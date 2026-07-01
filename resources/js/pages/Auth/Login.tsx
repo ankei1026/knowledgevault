@@ -59,7 +59,7 @@ const Login: React.FC = () => {
                             <div className="h-px w-12 bg-[#D4AF37]" />
                         </div>
                         <h1 className="font-playfair mb-2 text-4xl text-[#1A1A1A]">
-                            Welcome Back
+                            Welcome User
                         </h1>
                         <p className="font-sans text-sm text-[#6C6863]">
                             Access your academic archive

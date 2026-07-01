@@ -360,7 +360,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
                                                     <Link
-                                                        href={`/documents/${doc.id}`}
+                                                        href={`/student/my-manuscripts/${doc.id}`}
                                                         className="block"
                                                     >
                                                         <div className="flex flex-wrap items-center gap-2">
@@ -492,7 +492,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                                                     </button>
                                                 )}
                                                 <Link
-                                                    href={`/documents/${doc.id}`}
+                                                    href={`/student/my-manuscripts/${doc.id}`}
                                                     className="text-[#D4AF37] transition-colors hover:text-[#1A1A1A]"
                                                 >
                                                     <Eye className="h-4 w-4" />
@@ -583,18 +583,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                             </span>
                         </Link>
                         <Link
-                            href="/student/library"
-                            className="inline-flex h-10 items-center gap-2 border border-[#1A1A1A] px-5 font-sans text-xs tracking-[0.2em] text-[#1A1A1A] transition-all duration-500 hover:bg-[#1A1A1A] hover:text-white"
-                        >
-                            <BookOpen className="h-3 w-3" />
-                            My Library
-                        </Link>
-                        <Link
-                            href="/documents/search"
+                            href="/documents/"
                             className="inline-flex h-10 items-center gap-2 border border-[#1A1A1A] px-5 font-sans text-xs tracking-[0.2em] text-[#1A1A1A] transition-all duration-500 hover:bg-[#1A1A1A] hover:text-white"
                         >
                             <FileText className="h-3 w-3" />
-                            Browse Archive
+                            Browse Documents
                         </Link>
                     </div>
                 </div>

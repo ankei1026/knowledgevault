@@ -124,10 +124,27 @@ const PendingSubmissions: React.FC<PendingSubmissionsProps> = ({
                                         <Calendar className="h-3 w-3" />
                                         <span>
                                             Submitted:{' '}
-                                            {doc.submitted_at ||
-                                                new Date(
-                                                    doc.created_at,
-                                                ).toLocaleDateString()}
+                                            {doc.submitted_at
+                                                ? new Date(
+                                                      doc.submitted_at,
+                                                  ).toLocaleDateString(
+                                                      'en-US',
+                                                      {
+                                                          year: 'numeric',
+                                                          month: 'long',
+                                                          day: 'numeric',
+                                                      },
+                                                  )
+                                                : new Date(
+                                                      doc.created_at,
+                                                  ).toLocaleDateString(
+                                                      'en-US',
+                                                      {
+                                                          year: 'numeric',
+                                                          month: 'long',
+                                                          day: 'numeric',
+                                                      },
+                                                  )}
                                         </span>
                                     </div>
                                 </div>

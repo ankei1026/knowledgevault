@@ -32,6 +32,9 @@ import {
     AlertTriangle,
     Info,
     X,
+    File,
+    PlayCircle,
+    Forward,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -132,8 +135,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         navigationItems.push({
             section: 'Digital Library',
             items: [
-                { name: 'Browse Archive', href: '/documents', icon: FileText },
-                { name: 'Saved Papers', href: '/saved', icon: Bookmark },
+                {
+                    name: 'Browse Documents',
+                    href: '/documents',
+                    icon: FileText,
+                },
+                {
+                    name: 'Saved Papers',
+                    href: '/saved-documents',
+                    icon: Bookmark,
+                },
             ],
         });
 
@@ -166,6 +177,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                         icon: Eye,
                     },
                     {
+                        name: 'Final Submissions',
+                        href: '/faculty/final-submissions',
+                        icon: File,
+                    },
+                    {
                         name: 'My Students',
                         href: '/faculty/students',
                         icon: Users,
@@ -188,15 +204,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                         href: '/admin/documents',
                         icon: Grid3x3,
                     },
+
                     {
-                        name: 'System Settings',
-                        href: '/admin/settings',
-                        icon: Settings,
-                    },
-                    {
-                        name: 'Analytics',
-                        href: '/admin/analytics',
-                        icon: TrendingUp,
+                        name: 'Activities',
+                        href: '/admin/activities',
+                        icon: Forward,
                     },
                 ],
             });
@@ -315,7 +327,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                             </div>
 
                             {/* Search Bar */}
-                            <form
+                            {/* <form
                                 onSubmit={handleSearch}
                                 className="mx-8 hidden max-w-md flex-1 md:block"
                             >
@@ -335,7 +347,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                                     />
                                     <Search className="absolute top-1/2 left-0 h-4 w-4 -translate-y-1/2 text-[#6C6863]" />
                                 </div>
-                            </form>
+                            </form> */}
 
                             {/* User Actions */}
                             <div className="flex items-center gap-4">
@@ -370,13 +382,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                                         >
                                             <User className="h-4 w-4" />
                                             Profile
-                                        </Link>
-                                        <Link
-                                            href="/settings"
-                                            className="flex items-center gap-3 border-b border-[#1A1A1A]/5 px-4 py-3 font-sans text-sm text-[#1A1A1A] transition-colors duration-500 hover:bg-[#1A1A1A]/5"
-                                        >
-                                            <Settings className="h-4 w-4" />
-                                            Settings
                                         </Link>
                                         <button
                                             onClick={handleLogout}

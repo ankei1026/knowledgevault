@@ -4,6 +4,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\Invitation;
 use App\Models\User;
 use App\Notifications\ReviewerResponseNotification;
 use Illuminate\Http\Request;
@@ -40,11 +41,67 @@ class FacultyReviewController extends Controller
      */
     public function show($id)
     {
-        // Fix: Use findOrFail with where conditions
-        $document = Document::where('reviewer_id', Auth::id())
-            ->where('status', 'pending_review')
-            ->with('user')
-            ->findOrFail($id);  // Changed from firstOrFail($id) to findOrFail($id)
+        $document = Document::with(['user', 'reviewer'])
+            ->findOrFail($id);
+
+        // Check if the logged-in faculty is the assigned reviewer
+        if ($document->reviewer_id !== auth()->id()) {
+            abort(403, 'You are not authorized to review this document.');
+        }
+
+        // Get all authors from JSON field
+        $authors = $document->authors ?? [];
+
+        // Get the main author (student who submitted)
+        $mainAuthor = $document->user;
+
+        // Combine authors (main author + co-authors from JSON)
+        $allAuthors = [];
+
+        // Add main author first
+        if ($mainAuthor) {
+            $allAuthors[] = [
+                'name' => $mainAuthor->name,
+                'email' => $mainAuthor->email,
+                'role' => 'Main Author',
+            ];
+        }
+
+        // Add co-authors from JSON
+        if (is_array($authors) && count($authors) > 0) {
+            foreach ($authors as $author) {
+                // Skip if the author is the same as the main author
+                if ($mainAuthor && isset($author['name']) && $author['name'] === $mainAuthor->name) {
+                    continue;
+                }
+                $allAuthors[] = [
+                    'name' => $author['name'] ?? 'Unknown Author',
+                    'email' => $author['email'] ?? null,
+                    'role' => 'Co-author',
+                ];
+            }
+        }
+
+        // Get the invitation for this document and faculty
+        $invitation = Invitation::where('document_id', $document->id)
+            ->where('email', auth()->user()->email)
+            ->whereIn('status', ['pending', 'accepted'])
+            ->with('inviter')
+            ->first();
+
+        // Format file size
+        $fileSize = $document->file_size;
+        if ($fileSize) {
+            if ($fileSize < 1024) {
+                $formattedSize = $fileSize . ' B';
+            } elseif ($fileSize < 1048576) {
+                $formattedSize = round($fileSize / 1024, 1) . ' KB';
+            } else {
+                $formattedSize = round($fileSize / 1048576, 1) . ' MB';
+            }
+        } else {
+            $formattedSize = 'N/A';
+        }
 
         return Inertia::render('Faculty/ReviewDetail', [
             'document' => [
@@ -55,19 +112,30 @@ class FacultyReviewController extends Controller
                 'keywords' => $document->keywords,
                 'file_path' => $document->file_path,
                 'file_name' => $document->file_name,
-                'file_size' => $this->formatFileSize($document->file_size),
+                'file_size' => $formattedSize,
                 'mime_type' => $document->mime_type,
                 'status' => $document->status,
-                'submitted_at' => $document->submitted_at?->format('F j, Y, g:i a'),
+                'submitted_at' => $document->submitted_at ? $document->submitted_at->format('M d, Y h:i A') : 'N/A',
                 'user_id' => $document->user_id,
             ],
-            'author' => [
-                'id' => $document->user->id,
-                'name' => $document->user->name,
-                'email' => $document->user->email,
-            ],
+            'authors' => $allAuthors,
+            'invitation' => $invitation ? [
+                'id' => $invitation->id,
+                'email' => $invitation->email,
+                'message' => $invitation->message,
+                'role' => $invitation->role,
+                'status' => $invitation->status,
+                'created_at' => $invitation->created_at->format('M d, Y'),
+                'inviter' => $invitation->inviter ? [
+                    'id' => $invitation->inviter->id,
+                    'name' => $invitation->inviter->name,
+                    'email' => $invitation->inviter->email,
+                ] : null,
+            ] : null,
         ]);
     }
+
+
 
     /**
      * Submit review for a document

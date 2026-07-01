@@ -28,7 +28,10 @@ import {
 } from '@/components/ui/select';
 import AppLayout from '@/layout/app-layout';
 
-// Ensure component only renders on client side
+// Maximum file size: 120MB (matching your PHP settings)
+const MAX_FILE_SIZE = 120 * 1024 * 1024; // 120MB in bytes
+const MAX_FILE_SIZE_MB = 120;
+
 const UploadManuscript: React.FC = () => {
     const [isClient, setIsClient] = useState(false);
     const { flash } = usePage().props as any;
@@ -72,22 +75,48 @@ const UploadManuscript: React.FC = () => {
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const selectedFile = acceptedFiles[0];
+        if (!selectedFile) return;
+
+        // Check file size (120MB max)
+        if (selectedFile.size > MAX_FILE_SIZE) {
+            toast.error(`File size exceeds ${MAX_FILE_SIZE_MB}MB limit`);
+            setErrors((prev) => ({
+                ...prev,
+                file: `File size exceeds ${MAX_FILE_SIZE_MB}MB limit`,
+            }));
+            return;
+        }
+
+        // Check file type
+        const validTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+
+        // Also check by extension as some browsers might not set correct mime type
+        const validExtensions = ['.pdf', '.doc', '.docx'];
+        const fileExtension = selectedFile.name
+            .substring(selectedFile.name.lastIndexOf('.'))
+            .toLowerCase();
+
         if (
-            selectedFile &&
-            (selectedFile.type === 'application/pdf' ||
-                selectedFile.type === 'application/msword' ||
-                selectedFile.type ===
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            !validTypes.includes(selectedFile.type) &&
+            !validExtensions.includes(fileExtension)
         ) {
-            setFile(selectedFile);
-            setErrors((prev) => ({ ...prev, file: '' }));
-        } else {
             toast.error('Please upload a PDF or DOC/DOCX file');
             setErrors((prev) => ({
                 ...prev,
                 file: 'Please upload a PDF or DOC/DOCX file',
             }));
+            return;
         }
+
+        setFile(selectedFile);
+        setErrors((prev) => ({ ...prev, file: '' }));
+        toast.success(
+            `File selected: ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`,
+        );
     }, []);
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -167,8 +196,12 @@ const UploadManuscript: React.FC = () => {
             },
             onError: (errors) => {
                 setUploading(false);
+                console.error('Upload errors:', errors);
+
                 if (errors.file) {
-                    toast.error('File upload failed. Please try again.');
+                    toast.error(`File upload failed: ${errors.file}`);
+                } else if (errors.message) {
+                    toast.error(errors.message);
                 } else {
                     toast.error(
                         'Failed to upload manuscript. Please check your form.',
@@ -286,7 +319,11 @@ const UploadManuscript: React.FC = () => {
                         <div
                             onDragOver={handleDragOver}
                             onDrop={handleDrop}
-                            className={`mt-2 cursor-pointer border-2 border-dashed border-[#1A1A1A]/20 p-8 text-center transition-all duration-500 hover:border-[#D4AF37]`}
+                            className={`mt-2 cursor-pointer border-2 border-dashed p-8 text-center transition-all duration-500 ${
+                                file
+                                    ? 'border-[#D4AF37] bg-[#D4AF37]/5'
+                                    : 'border-[#1A1A1A]/20 hover:border-[#D4AF37]'
+                            }`}
                             onClick={() =>
                                 document.getElementById('file-input')?.click()
                             }
@@ -294,7 +331,7 @@ const UploadManuscript: React.FC = () => {
                             <input
                                 id="file-input"
                                 type="file"
-                                accept=".pdf,.doc,.docx"
+                                accept=".pdf"
                                 onChange={handleFileInput}
                                 className="hidden"
                             />
@@ -302,7 +339,7 @@ const UploadManuscript: React.FC = () => {
                                 <div className="flex items-center justify-center gap-3">
                                     <FileText className="h-8 w-8 text-[#D4AF37]" />
                                     <div>
-                                        <p className="font-sans text-sm text-[#1A1A1A]">
+                                        <p className="font-sans text-sm font-medium text-[#1A1A1A]">
                                             {file.name}
                                         </p>
                                         <p className="font-sans text-xs text-[#6C6863]">
@@ -317,8 +354,12 @@ const UploadManuscript: React.FC = () => {
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setFile(null);
+                                            setErrors((prev) => ({
+                                                ...prev,
+                                                file: '',
+                                            }));
                                         }}
-                                        className="ml-4 text-[#6C6863] hover:text-red-500"
+                                        className="ml-4 rounded-full p-1 text-[#6C6863] transition-colors hover:bg-red-50 hover:text-red-500"
                                     >
                                         <X className="h-4 w-4" />
                                     </button>
@@ -330,7 +371,8 @@ const UploadManuscript: React.FC = () => {
                                         Drag & drop or click to browse
                                     </p>
                                     <p className="mt-1 font-sans text-xs text-[#6C6863]">
-                                        PDF, DOC, DOCX (Max 120MB)
+                                        PDF, DOC, DOCX (Max {MAX_FILE_SIZE_MB}
+                                        MB)
                                     </p>
                                 </div>
                             )}
@@ -387,10 +429,11 @@ const UploadManuscript: React.FC = () => {
                                     abstract: e.target.value,
                                 })
                             }
-                            placeholder="Summarize your research (150-250 words)"
-                            rows={5}
+                            placeholder="Summarize your research (no character limit)"
+                            rows={8}
                             className="w-full resize-none"
                         />
+
                         <p className="mt-2 text-right text-xs text-[#6C6863]">
                             {formData.abstract.length} characters
                         </p>
@@ -402,7 +445,7 @@ const UploadManuscript: React.FC = () => {
                             htmlFor="description"
                             className="mb-2 block text-sm font-medium text-[#1A1A1A]"
                         >
-                            Description
+                            Background of the Study
                         </Label>
                         <Textarea
                             id="description"
@@ -413,8 +456,8 @@ const UploadManuscript: React.FC = () => {
                                     description: e.target.value,
                                 })
                             }
-                            placeholder="Provide additional details about your research"
-                            rows={4}
+                            placeholder="Provide detailed background of the study (no character limit)"
+                            rows={10}
                             className="w-full resize-none"
                         />
                     </div>
@@ -574,7 +617,7 @@ const UploadManuscript: React.FC = () => {
                         </li>
                         <li className="flex items-start gap-2">
                             <CheckCircle className="mt-0.5 h-4 w-4 text-[#D4AF37]" />
-                            Maximum file size is 120MB
+                            Maximum file size is {MAX_FILE_SIZE_MB}MB
                         </li>
                     </ul>
                 </div>
@@ -660,14 +703,14 @@ const UploadManuscript: React.FC = () => {
                                     <Label className="mb-2 block">
                                         Personal Message (Optional)
                                     </Label>
-                                    <textarea
+                                    <Textarea
                                         value={inviteMessage}
                                         onChange={(e) =>
                                             setInviteMessage(e.target.value)
                                         }
                                         placeholder="I'd like to invite you to collaborate on my research..."
                                         rows={3}
-                                        className="w-full border border-[#1A1A1A]/20 bg-transparent p-2 font-sans text-sm transition-colors duration-500 focus:border-[#D4AF37] focus:outline-none"
+                                        className="w-full resize-none"
                                     />
                                 </div>
 

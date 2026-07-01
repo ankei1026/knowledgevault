@@ -10,30 +10,28 @@ import {
     Edit,
     Trash2,
     Send,
-    BarChart3,
     Clock,
     CheckCircle,
     XCircle,
     FileText,
     User,
     Calendar,
-    Tag,
     Users,
-    Mail,
     MessageSquare,
-    ChevronDown,
-    MoreVertical,
     Award,
-    TrendingUp,
-    BookOpen,
     UserPlus,
     X,
-    Plus,
+    Pencil,
 } from 'lucide-react';
 import AppLayout from '@/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+interface Author {
+    name: string;
+    email: string | null;
+}
 
 interface Document {
     id: number;
@@ -65,24 +63,9 @@ interface Document {
     reviewer: { id: number; name: string; email: string } | null;
 }
 
-interface ReviewHistory {
-    id: number;
-    reviewer_id: number;
-    document_id: number;
-    rating: number | null;
-    feedback: string | null;
-    status: string;
-    created_at: string;
-    reviewer: {
-        id: number;
-        name: string;
-        email: string;
-    };
-}
-
 interface MyManuscriptDetailProps {
     document: Document;
-    reviewHistory: ReviewHistory[];
+    reviewHistory: any[];
     stats: {
         views: number;
         downloads: number;
@@ -90,18 +73,22 @@ interface MyManuscriptDetailProps {
         submitted_at: string | null;
         reviewed_at: string | null;
     };
+    authors: Author[];
 }
 
 const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
     document,
     reviewHistory,
     stats,
+    authors: initialAuthors = [],
 }) => {
-    const [showAddCollaboratorModal, setShowAddCollaboratorModal] =
-        useState(false);
-    const [collaboratorName, setCollaboratorName] = useState('');
-    const [collaboratorEmail, setCollaboratorEmail] = useState('');
-    const [collaboratorRole, setCollaboratorRole] = useState('co-author');
+    const [showAddAuthorModal, setShowAddAuthorModal] = useState(false);
+    const [showEditAuthorModal, setShowEditAuthorModal] = useState(false);
+    const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
+    const [authorName, setAuthorName] = useState('');
+    const [authorEmail, setAuthorEmail] = useState('');
+    const [authors, setAuthors] = useState<Author[]>(initialAuthors);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -189,7 +176,7 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
             )
         ) {
             router.post(
-                `/student/my-manuscripts/${document.id}/submit-final`,
+                `/student/final-papers/submit/${document.id}`,
                 {},
                 {
                     onSuccess: () => {
@@ -203,20 +190,112 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
         }
     };
 
-    const handleAddCollaborator = (e: React.FormEvent) => {
+    const handleAddAuthor = (e: React.FormEvent) => {
         e.preventDefault();
-        // Non-functional - just UI demo
-        toast.success('Collaborator added successfully!');
-        setShowAddCollaboratorModal(false);
-        setCollaboratorName('');
-        setCollaboratorEmail('');
+
+        if (!authorName.trim()) {
+            toast.error('Please enter an author name.');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        router.post(
+            `/student/my-manuscripts/${document.id}/authors`,
+            {
+                name: authorName.trim(),
+                email: authorEmail.trim() || null,
+            },
+            {
+                onSuccess: () => {
+                    toast.success('Co-author added successfully!');
+                    setAuthors([
+                        ...authors,
+                        {
+                            name: authorName.trim(),
+                            email: authorEmail.trim() || null,
+                        },
+                    ]);
+                    setAuthorName('');
+                    setAuthorEmail('');
+                    setShowAddAuthorModal(false);
+                    setIsSubmitting(false);
+                },
+                onError: (errors) => {
+                    toast.error('Failed to add co-author. Please try again.');
+                    setIsSubmitting(false);
+                },
+            },
+        );
     };
 
-    const roles = [
-        { value: 'co-author', label: 'Co-author' },
-        { value: 'reviewer', label: 'Reviewer' },
-        { value: 'viewer', label: 'Viewer' },
-    ];
+    const handleRemoveAuthor = (name: string) => {
+        if (confirm(`Remove "${name}" from co-authors?`)) {
+            router.delete(`/student/my-manuscripts/${document.id}/authors`, {
+                data: { name },
+                onSuccess: () => {
+                    toast.success('Co-author removed successfully!');
+                    setAuthors(authors.filter((a) => a.name !== name));
+                },
+                onError: () => {
+                    toast.error('Failed to remove co-author.');
+                },
+            });
+        }
+    };
+
+    const handleEditAuthor = (author: Author) => {
+        setEditingAuthor(author);
+        setAuthorName(author.name);
+        setAuthorEmail(author.email || '');
+        setShowEditAuthorModal(true);
+    };
+
+    const handleUpdateAuthor = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!authorName.trim() || !editingAuthor) {
+            toast.error('Please enter an author name.');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        router.put(
+            `/student/my-manuscripts/${document.id}/authors`,
+            {
+                old_name: editingAuthor.name,
+                name: authorName.trim(),
+                email: authorEmail.trim() || null,
+            },
+            {
+                onSuccess: () => {
+                    toast.success('Author updated successfully!');
+                    setAuthors(
+                        authors.map((a) =>
+                            a.name === editingAuthor.name
+                                ? {
+                                      name: authorName.trim(),
+                                      email: authorEmail.trim() || null,
+                                  }
+                                : a,
+                        ),
+                    );
+                    setShowEditAuthorModal(false);
+                    setEditingAuthor(null);
+                    setAuthorName('');
+                    setAuthorEmail('');
+                    setIsSubmitting(false);
+                },
+                onError: () => {
+                    toast.error('Failed to update author.');
+                    setIsSubmitting(false);
+                },
+            },
+        );
+    };
+
+    const canEditAuthors = ['draft', 'rejected'].includes(document.status);
 
     return (
         <AppLayout>
@@ -262,7 +341,7 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                         <div className="flex items-center gap-2">
                             <User className="h-4 w-4" />
                             <span className="font-sans">
-                                {document.user.name}
+                                {document.user?.name || 'Unknown Author'}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -274,7 +353,7 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                                 ).toLocaleDateString()}
                             </span>
                         </div>
-                        {stats.submitted_at && (
+                        {stats?.submitted_at && (
                             <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4" />
                                 <span className="font-sans">
@@ -288,13 +367,13 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                         <div className="flex items-center gap-2">
                             <Eye className="h-4 w-4" />
                             <span className="font-sans">
-                                {stats.views} views
+                                {stats?.views || 0} views
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Download className="h-4 w-4" />
                             <span className="font-sans">
-                                {stats.downloads} downloads
+                                {stats?.downloads || 0} downloads
                             </span>
                         </div>
                     </div>
@@ -322,19 +401,21 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                         >
                             <span className="absolute inset-0 -translate-x-full bg-[#D4AF37] transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:translate-x-0" />
                             <span className="relative z-10 flex items-center gap-2 font-sans text-[11px] font-medium tracking-[0.2em] text-white uppercase">
-                                <CheckCircle className="h-4 w-4" />
-                                Publish as Final Paper
+                                <Award className="h-4 w-4" />
+                                Submit as Final Paper
                             </span>
                         </button>
                     )}
 
-                    <Link
-                        href={`/student/my-manuscripts/${document.id}/edit`}
-                        className="flex h-11 items-center border border-[#1A1A1A] px-6 font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase transition-all duration-500 hover:bg-[#1A1A1A] hover:text-white"
-                    >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                    </Link>
+                    {['draft', 'rejected'].includes(document.status) && (
+                        <Link
+                            href={`/student/my-manuscripts/${document.id}/edit`}
+                            className="flex h-11 items-center border border-[#1A1A1A] px-6 font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase transition-all duration-500 hover:bg-[#1A1A1A] hover:text-white"
+                        >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                        </Link>
+                    )}
 
                     {document.file_path && (
                         <a
@@ -343,8 +424,8 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                             rel="noopener noreferrer"
                             className="flex h-11 items-center border border-[#1A1A1A] px-6 font-sans text-[11px] tracking-[0.2em] text-[#1A1A1A] uppercase transition-all duration-500 hover:bg-[#1A1A1A] hover:text-white"
                         >
-                            <Download className="mr-2 h-4 w-4" />
-                            Download
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview
                         </a>
                     )}
 
@@ -447,73 +528,79 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                                             Views
                                         </span>
                                         <span className="font-playfair text-sm text-[#1A1A1A]">
-                                            {stats.views}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between border-b border-[#1A1A1A]/10 pb-2">
-                                        <span className="font-sans text-sm text-[#6C6863]">
-                                            <Download className="mr-2 inline h-3 w-3" />
-                                            Downloads
-                                        </span>
-                                        <span className="font-playfair text-sm text-[#1A1A1A]">
-                                            {stats.downloads}
+                                            {stats?.views || 0}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Co-authors / Groupmates */}
+                            {/* Authors / Co-authors */}
                             <div className="mb-6">
                                 <div className="mb-2 flex items-center justify-between">
                                     <span className="font-sans text-[10px] tracking-[0.2em] text-[#6C6863] uppercase">
-                                        Co-authors / Groupmates
+                                        Authors / Co-authors
                                     </span>
-                                    <button
-                                        onClick={() =>
-                                            setShowAddCollaboratorModal(true)
-                                        }
-                                        className="flex items-center gap-1 text-xs text-[#D4AF37] transition-colors hover:text-[#1A1A1A]"
-                                    >
-                                        <UserPlus className="h-3 w-3" />
-                                        Add
-                                    </button>
+                                    {canEditAuthors && (
+                                        <button
+                                            onClick={() => {
+                                                setAuthorName('');
+                                                setAuthorEmail('');
+                                                setShowAddAuthorModal(true);
+                                            }}
+                                            className="flex items-center gap-1 text-xs text-[#D4AF37] transition-colors hover:text-[#1A1A1A]"
+                                        >
+                                            <UserPlus className="h-3 w-3" />
+                                            Add
+                                        </button>
+                                    )}
                                 </div>
-                                {document.collaborators &&
-                                document.collaborators.length > 0 ? (
+
+                                {authors && authors.length > 0 ? (
                                     <div className="space-y-2">
-                                        {document.collaborators.map(
-                                            (collaborator) => (
-                                                <div
-                                                    key={collaborator.id}
-                                                    className="flex items-center justify-between border-b border-[#1A1A1A]/10 pb-2"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <Users className="h-3 w-3 text-[#6C6863]" />
-                                                        <span className="font-sans text-sm text-[#1A1A1A]">
-                                                            {collaborator.name}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs text-[#6C6863]">
-                                                            {
-                                                                collaborator
-                                                                    .pivot.role
-                                                            }
-                                                        </span>
+                                        {authors.map((author, index) => (
+                                            <div
+                                                key={index}
+                                                className="flex items-center justify-between border-b border-[#1A1A1A]/10 pb-2"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <User className="h-3 w-3 text-[#6C6863]" />
+                                                    <span className="font-sans text-sm text-[#1A1A1A]">
+                                                        {author.name}
+                                                        {author.email && (
+                                                            <span className="ml-1 text-xs text-[#6C6863]">
+                                                                ({author.email})
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                {canEditAuthors && (
+                                                    <div className="flex items-center gap-1">
                                                         <button
-                                                            onClick={() => {
-                                                                toast.success(
-                                                                    `${collaborator.name} removed from collaborators`,
-                                                                );
-                                                            }}
+                                                            onClick={() =>
+                                                                handleEditAuthor(
+                                                                    author,
+                                                                )
+                                                            }
+                                                            className="text-[#6C6863] transition-colors hover:text-[#D4AF37]"
+                                                            title="Edit author"
+                                                        >
+                                                            <Pencil className="h-3 w-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                handleRemoveAuthor(
+                                                                    author.name,
+                                                                )
+                                                            }
                                                             className="text-[#6C6863] transition-colors hover:text-red-500"
+                                                            title="Remove author"
                                                         >
                                                             <X className="h-3 w-3" />
                                                         </button>
                                                     </div>
-                                                </div>
-                                            ),
-                                        )}
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : (
                                     <div className="py-4 text-center">
@@ -521,16 +608,18 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                                         <p className="mt-1 font-sans text-xs text-[#6C6863]">
                                             No co-authors yet
                                         </p>
-                                        <button
-                                            onClick={() =>
-                                                setShowAddCollaboratorModal(
-                                                    true,
-                                                )
-                                            }
-                                            className="mt-2 text-xs text-[#D4AF37] hover:underline"
-                                        >
-                                            Add co-authors
-                                        </button>
+                                        {canEditAuthors && (
+                                            <button
+                                                onClick={() => {
+                                                    setAuthorName('');
+                                                    setAuthorEmail('');
+                                                    setShowAddAuthorModal(true);
+                                                }}
+                                                className="mt-2 text-xs text-[#D4AF37] hover:underline"
+                                            >
+                                                Add co-authors
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -589,46 +678,44 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
                 </div>
             </div>
 
-            {/* Add Collaborator Modal - Non-functional UI Demo */}
-            {showAddCollaboratorModal && (
+            {/* Add Author Modal */}
+            {showAddAuthorModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A1A1A]/50 p-4">
                     <div className="relative w-full max-w-md border border-[#1A1A1A]/20 bg-[#F9F8F6]">
                         <div className="flex items-center justify-between border-b border-[#1A1A1A]/10 p-4">
                             <div>
                                 <h3 className="font-playfair text-xl text-[#1A1A1A]">
-                                    Add Co-author / Groupmate
+                                    Add Co-author
                                 </h3>
                                 <p className="mt-1 font-sans text-sm text-[#6C6863]">
-                                    Add a collaborator to this manuscript
+                                    Add a co-author to this manuscript
                                 </p>
                             </div>
                             <button
-                                onClick={() =>
-                                    setShowAddCollaboratorModal(false)
-                                }
+                                onClick={() => setShowAddAuthorModal(false)}
                                 className="text-[#6C6863] transition-colors hover:text-[#D4AF37]"
                             >
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleAddCollaborator} className="p-6">
+                        <form onSubmit={handleAddAuthor} className="p-6">
                             <div className="space-y-4">
                                 <div>
                                     <Label
-                                        htmlFor="collab-name"
+                                        htmlFor="author-name"
                                         className="mb-2 block text-sm font-medium text-[#1A1A1A]"
                                     >
                                         Full Name *
                                     </Label>
                                     <Input
-                                        id="collab-name"
+                                        id="author-name"
                                         type="text"
-                                        value={collaboratorName}
+                                        value={authorName}
                                         onChange={(e) =>
-                                            setCollaboratorName(e.target.value)
+                                            setAuthorName(e.target.value)
                                         }
-                                        placeholder="Enter groupmate's full name"
+                                        placeholder="Enter co-author's full name"
                                         className="w-full"
                                         required
                                     />
@@ -636,65 +723,132 @@ const MyManuscriptDetail: React.FC<MyManuscriptDetailProps> = ({
 
                                 <div>
                                     <Label
-                                        htmlFor="collab-email"
+                                        htmlFor="author-email"
                                         className="mb-2 block text-sm font-medium text-[#1A1A1A]"
                                     >
-                                        Email Address *
+                                        Email Address (Optional)
                                     </Label>
                                     <Input
-                                        id="collab-email"
+                                        id="author-email"
                                         type="email"
-                                        value={collaboratorEmail}
+                                        value={authorEmail}
                                         onChange={(e) =>
-                                            setCollaboratorEmail(e.target.value)
+                                            setAuthorEmail(e.target.value)
                                         }
-                                        placeholder="groupmate@email.com"
+                                        placeholder="co-author@email.com"
                                         className="w-full"
-                                        required
                                     />
                                 </div>
-
-                                {/* <div>
-                                    <Label
-                                        htmlFor="collab-role"
-                                        className="mb-2 block text-sm font-medium text-[#1A1A1A]"
-                                    >
-                                        Role
-                                    </Label>
-                                    <select
-                                        id="collab-role"
-                                        value={collaboratorRole}
-                                        onChange={(e) =>
-                                            setCollaboratorRole(e.target.value)
-                                        }
-                                        className="w-full border border-[#1A1A1A]/20 bg-transparent p-2 font-sans text-sm focus:border-[#D4AF37] focus:outline-none"
-                                    >
-                                        {roles.map((role) => (
-                                            <option
-                                                key={role.value}
-                                                value={role.value}
-                                            >
-                                                {role.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div> */}
                             </div>
 
                             <div className="mt-6 flex gap-3">
                                 <Button
                                     type="submit"
-                                    className="flex-1 bg-[#1A1A1A] hover:bg-[#D4AF37]"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-[#1A1A1A] hover:bg-[#D4AF37] disabled:opacity-50"
                                 >
                                     <UserPlus className="mr-2 h-4 w-4" />
-                                    Add Collaborator
+                                    {isSubmitting
+                                        ? 'Adding...'
+                                        : 'Add Co-author'}
                                 </Button>
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() =>
-                                        setShowAddCollaboratorModal(false)
-                                    }
+                                    onClick={() => setShowAddAuthorModal(false)}
+                                    className="flex-1"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Author Modal */}
+            {showEditAuthorModal && editingAuthor && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A1A1A]/50 p-4">
+                    <div className="relative w-full max-w-md border border-[#1A1A1A]/20 bg-[#F9F8F6]">
+                        <div className="flex items-center justify-between border-b border-[#1A1A1A]/10 p-4">
+                            <div>
+                                <h3 className="font-playfair text-xl text-[#1A1A1A]">
+                                    Edit Co-author
+                                </h3>
+                                <p className="mt-1 font-sans text-sm text-[#6C6863]">
+                                    Update co-author details
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowEditAuthorModal(false);
+                                    setEditingAuthor(null);
+                                }}
+                                className="text-[#6C6863] transition-colors hover:text-[#D4AF37]"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateAuthor} className="p-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <Label
+                                        htmlFor="edit-author-name"
+                                        className="mb-2 block text-sm font-medium text-[#1A1A1A]"
+                                    >
+                                        Full Name *
+                                    </Label>
+                                    <Input
+                                        id="edit-author-name"
+                                        type="text"
+                                        value={authorName}
+                                        onChange={(e) =>
+                                            setAuthorName(e.target.value)
+                                        }
+                                        placeholder="Enter co-author's full name"
+                                        className="w-full"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label
+                                        htmlFor="edit-author-email"
+                                        className="mb-2 block text-sm font-medium text-[#1A1A1A]"
+                                    >
+                                        Email Address (Optional)
+                                    </Label>
+                                    <Input
+                                        id="edit-author-email"
+                                        type="email"
+                                        value={authorEmail}
+                                        onChange={(e) =>
+                                            setAuthorEmail(e.target.value)
+                                        }
+                                        placeholder="co-author@email.com"
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex gap-3">
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="flex-1 bg-[#1A1A1A] hover:bg-[#D4AF37] disabled:opacity-50"
+                                >
+                                    {isSubmitting
+                                        ? 'Updating...'
+                                        : 'Update Co-author'}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setShowEditAuthorModal(false);
+                                        setEditingAuthor(null);
+                                    }}
                                     className="flex-1"
                                 >
                                     Cancel
